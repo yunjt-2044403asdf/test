@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>4조 3교대 달력</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --primary-color: #4A90E2;
+      --holiday-color: #d9534f;
+      
+      /* 근무 상태 색상 */
+      --shift-a-color: #e3f2fd; /* A조 */
+      --shift-b-color: #fff3e0; /* B조 */
+      --shift-c-color: #f3e5f5; /* C조 */
+      --off-color: #ffebee;     /* 휴무 */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 1.2rem;
+      color: #1a1a1a;
+    }
+
+    /* 설정 영역 */
+    .config-panel {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .config-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    select, input {
+      padding: 5px 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    /* 달력 헤더 */
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .calendar-header button {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+
+    .calendar-header h2 {
+      font-size: 1.1rem;
+      font-weight: bold;
+    }
+
+    /* 달력 그리드 (크기 완전 고정) */
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 3px;
+      width: 100%;
+    }
+
+    .day-header {
+      text-align: center;
+      font-weight: 800;
+      padding: 6px 0;
+      background: #eee;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    .day-header:nth-child(1) { color: var(--holiday-color); }
+    .day-header:nth-child(7) { color: #0275d8; }
+
+    /* 셀 높이 고정 */
+    .cell {
+      height: 105px;
+      background: #fff;
+      border: 1px solid #eef;
+      border-radius: 6px;
+      padding: 3px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .cell .date-num {
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 18px;
+    }
+
+    .date-label {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #222;
+      line-height: 1;
+    }
+
+    .cell.holiday .date-label {
+      color: var(--holiday-color);
+    }
+
+    .holiday-name {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--holiday-color);
+      background: #fde8e8;
+      padding: 1px 3px;
+      border-radius: 3px;
+      max-width: 55%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+    }
+
+    .cell.other-month {
+      opacity: 0.25;
+      cursor: default;
+    }
+
+    .cell.today {
+      background-color: #e8f4fe;
+      border: 2px solid var(--primary-color);
+      box-shadow: inset 0 0 4px rgba(74, 144, 226, 0.2);
+    }
+
+    .cell.today .date-label {
+      color: var(--primary-color);
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .cell.today .date-label::after {
+      content: '오늘';
+      font-size: 0.55rem;
+      background: var(--primary-color);
+      color: #fff;
+      padding: 1px 3px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    .shift-tag {
+      font-size: 0.68rem;
+      padding: 1px 3px;
+      margin-top: 2px;
+      border-radius: 3px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 18px;
+      white-space: nowrap;
+    }
+
+    .team-name {
+      color: #000000;
+    }
+
+    .shift-A { background-color: var(--shift-a-color); color: #0d47a1; }
+    .shift-B { background-color: var(--shift-b-color); color: #e65100; }
+    .shift-C { background-color: var(--shift-c-color); color: #4a148c; }
+    .shift-OFF { background-color: var(--off-color); color: #b71c1c; }
+
+    .my-team-highlight {
+      border: 1.5px solid var(--primary-color);
+      font-size: 0.72rem !important;
+      font-weight: 800 !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* 상세 안내 팝업 모달 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-card {
+      background: white;
+      width: 100%;
+      max-width: 320px;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+    }
+
+    .modal-title {
+      font-size: 1.05rem;
+      font-weight: bold;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #888;
+      cursor: pointer;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .modal-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 4px; }
+      .container { padding: 6px; border-radius: 8px; }
+      h1 { font-size: 1.05rem; margin-bottom: 6px; }
+      .config-panel { padding: 6px; gap: 4px; flex-direction: column; align-items: stretch; }
+      .config-group { justify-content: space-between; }
+      .calendar-grid { gap: 2px; }
+      .cell { height: 74px; padding: 1px 2px; }
+      .date-label { font-size: 0.8rem; }
+      .holiday-name { font-size: 0.52rem; padding: 0 2px; }
+      .shift-tag { font-size: 0.58rem; padding: 0 2px; margin-top: 1px; height: 13px; }
+      .my-team-highlight { font-size: 0.62rem !important; border-width: 1px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>4조 3교대 (6일 근무 / 2일 휴무)</h1>
+
+  <div class="config-panel">
+    <div class="config-group">
+      <label for="myTeam"><b>내 조 선택:</b></label>
+      <select id="myTeam" onchange="renderCalendar()">
+        <option value="1">1조</option>
+        <option value="2">2조</option>
+        <option value="3">3조</option>
+        <option value="4">4조</option>
+      </select>
+    </div>
+
+    <div class="config-group">
+      <label for="baseDate"><b>달력 이동 (기준일):</b></label>
+      <input type="date" id="baseDate" value="2026-10-29" onchange="onBaseDateChange()">
+    </div>
+  </div>
+
+  <div class="calendar-header">
+    <button onclick="changeMonth(-1)">◀ 이전달</button>
+    <h2 id="monthTitle"></h2>
+    <button onclick="changeMonth(1)">다음달 ▶</button>
+  </div>
+
+  <div class="calendar-grid" id="calendarGrid">
+    <div class="day-header">일</div>
+    <div class="day-header">월</div>
+    <div class="day-header">화</div>
+    <div class="day-header">수</div>
+    <div class="day-header">목</div>
+    <div class="day-header">금</div>
+    <div class="day-header">토</div>
+  </div>
+</div>
+
+<!-- 상세 모달 팝업 -->
+<div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title" id="modalDateTitle">날짜 상세 정보</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalHolidayInfo" style="color: var(--holiday-color); font-weight: bold; margin-bottom: 8px; font-size: 0.9rem;"></div>
+    <div class="modal-body" id="modalShiftList"></div>
+  </div>
+</div>
+
+<script>
+  let currentDate = new Date();
+  const today = new Date();
+
+  function parseSafeDate(dateStr) {
+    if (!dateStr) return new Date();
+    const nums = dateStr.match(/\d+/g);
+    if (nums && nums.length >= 3) {
+      return new Date(parseInt(nums[0], 10), parseInt(nums[1], 10) - 1, parseInt(nums[2], 10));
+    }
+    return new Date();
+  }
+
+  const pattern = [];
+  const shiftSequence = [
+    { code: 'A조', class: 'shift-A' },
+    { code: 'B조', class: 'shift-B' },
+    { code: 'C조', class: 'shift-C' }
+  ];
+  const offType = { code: '휴무', class: 'shift-OFF' };
+
+  shiftSequence.forEach(item => {
+    for (let i = 0; i < 2; i++) pattern.push(offType);
+    for (let i = 0; i < 6; i++) pattern.push(item);
+  });
+
+  const PATTERN_LENGTH = pattern.length;
+
+  const FIXED_BASE_DATE = new Date(2026, 9, 29);
+  FIXED_BASE_DATE.setHours(0,0,0,0);
+
+  const teamBaseIndices = { 1: 1, 2: 7, 3: 13, 4: 19 };
+
+  function changeMonth(delta) {
+    currentDate.setMonth(currentDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  function onBaseDateChange() {
+    const val = document.getElementById('baseDate').value;
+    const baseDateInput = parseSafeDate(val);
+    if (!isNaN(baseDateInput.getTime())) {
+      currentDate = new Date(baseDateInput.getFullYear(), baseDateInput.getMonth(), 1);
+    }
+    renderCalendar();
+  }
+
+  function formatDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${date}`;
+  }
+
+  function findSolarForLunar(year, targetLunarMonth, targetLunarDay) {
+    const startMonth = targetLunarMonth === 1 ? 0 : targetLunarMonth === 8 ? 7 : 3;
+    const searchStart = new Date(year, startMonth, 1);
+    
+    for (let d = 0; d < 70; d++) {
+      const cur = new Date(searchStart);
+      cur.setDate(searchStart.getDate() + d);
+      
+      const lunar = getLunarApprox(cur);
+      if (lunar.month === targetLunarMonth && lunar.day === targetLunarDay) {
+        return cur;
+      }
+    }
+    return new Date(year, startMonth + 1, targetLunarDay);
+  }
+
+  function getLunarApprox(date) {
+    const reference = new Date(2026, 1, 17);
+    const diff = Math.floor((date.getTime() - reference.getTime()) / (86400000));
+    const synodic = 29.530588;
+    let months = diff / synodic;
+    let day = Math.floor(((diff % synodic) + synodic) % synodic) + 1;
+    let month = (Math.floor(months) % 12 + 12) % 12 + 1;
+    return { month, day };
+  }
+
+  function getHolidays(year) {
+    const holidays = {};
+
+    const fixedHolidays = {
+      '01-01': '신정', '03-01': '삼일절', '05-05': '어린이날',
+      '06-06': '현충일', '08-15': '광복절', '10-03': '개천절',
+      '10-09': '한글날', '12-25': '성탄절'
+    };
+
+    for (const [md, name] of Object.entries(fixedHolidays)) {
+      holidays[`${year}-${md}`] = name;
+    }
+
+    const seollal = findSolarForLunar(year, 1, 1);
+    const chuseok = findSolarForLunar(year, 8, 15);
+    const buddha = findSolarForLunar(year, 4, 8);
+
+    holidays[formatDate(buddha)] = '부처님오신날';
+
+    const sPrev = new Date(seollal); sPrev.setDate(seollal.getDate() - 1);
+    const sNext = new Date(seollal); sNext.setDate(seollal.getDate() + 1);
+    holidays[formatDate(sPrev)] = '설날 연휴';
+    holidays[formatDate(seollal)] = '설날';
+    holidays[formatDate(sNext)] = '설날 연휴';
+
+    const cPrev = new Date(chuseok); cPrev.setDate(chuseok.getDate() - 1);
+    const cNext = new Date(chuseok); cNext.setDate(chuseok.getDate() + 1);
+    holidays[formatDate(cPrev)] = '추석 연휴';
+    holidays[formatDate(chuseok)] = '추석';
+    holidays[formatDate(cNext)] = '추석 연휴';
+
+    const substituteHolidays = {};
+    for (const [dateStr, name] of Object.entries(holidays)) {
+      const d = parseSafeDate(dateStr);
+      const day = d.getDay();
+
+      if (name !== '신정' && name !== '현충일') {
+        if (day === 0) {
+          const subDate = new Date(d);
+          subDate.setDate(d.getDate() + 1);
+          const subKey = formatDate(subDate);
+          if (!holidays[subKey]) substituteHolidays[subKey] = '대체공휴일';
+        } else if (day === 6 && (name === '어린이날' || name.includes('설날') || name.includes('추석'))) {
+          const subDate = new Date(d);
+          subDate.setDate(d.getDate() + 2);
+          const subKey = formatDate(subDate);
+          if (!holidays[subKey]) substituteHolidays[subKey] = '대체공휴일';
+        }
+      }
+    }
+
+    return { ...holidays, ...substituteHolidays };
+  }
+
+  function renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    document.getElementById('monthTitle').innerText = `${year}년 ${month + 1}월`;
+
+    const grid = document.getElementById('calendarGrid');
+    
+    while (grid.children.length > 7) {
+      grid.removeChild(grid.lastChild);
+    }
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const myTeam = parseInt(document.getElementById('myTeam').value, 10);
+
+    const currentHolidays = getHolidays(year);
+
+    for (let i = 0; i < firstDay; i++) {
+      const emptyCell = document.createElement('div');
+      emptyCell.classList.add('cell', 'other-month');
+      grid.appendChild(emptyCell);
+    }
+
+    for (let date = 1; date <= lastDate; date++) {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+
+      const thisDate = new Date(year, month, date);
+      thisDate.setHours(0,0,0,0);
+
+      const dateString = formatDate(thisDate);
+      const isHoliday = !!currentHolidays[dateString];
+      const holidayName = currentHolidays[dateString] || '';
+
+      if (isHoliday) {
+        cell.classList.add('holiday');
+      }
+
+      if (
+        thisDate.getFullYear() === today.getFullYear() &&
+        thisDate.getMonth() === today.getMonth() &&
+        thisDate.getDate() === today.getDate()
+      ) {
+        cell.classList.add('today');
+      }
+
+      const dateEl = document.createElement('div');
+      dateEl.classList.add('date-num');
+      
+      let dateHtml = `<span class="date-label">${date}</span>`;
+      if (isHoliday) {
+        dateHtml += `<span class="holiday-name">${holidayName}</span>`;
+      }
+      dateEl.innerHTML = dateHtml;
+      cell.appendChild(dateEl);
+
+      const diffTime = thisDate.getTime() - FIXED_BASE_DATE.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+      const shiftsForDay = [];
+
+      for (let team = 1; team <= 4; team++) {
+        const baseIdx = teamBaseIndices[team];
+        let teamPatternIdx = (baseIdx + diffDays) % PATTERN_LENGTH;
+        if (teamPatternIdx < 0) teamPatternIdx += PATTERN_LENGTH;
+
+        const shift = pattern[teamPatternIdx];
+        shiftsForDay.push({ team, shift });
+
+        const tag = document.createElement('div');
+        tag.classList.add('shift-tag', shift.class);
+
+        if (team === myTeam) {
+          tag.classList.add('my-team-highlight');
+          tag.innerHTML = `<span class="team-name"><b>${team}조</b></span> <span>${shift.code}</span>`;
+        } else {
+          tag.innerHTML = `<span class="team-name">${team}조</span> <span>${shift.code}</span>`;
+        }
+
+        cell.appendChild(tag);
+      }
+
+      cell.addEventListener('click', () => {
+        openModal(`${year}년 ${month + 1}월 ${date}일`, holidayName, shiftsForDay, myTeam);
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function openModal(dateTitle, holidayName, shifts, myTeam) {
+    document.getElementById('modalDateTitle').innerText = dateTitle;
+    const holiEl = document.getElementById('modalHolidayInfo');
+    if (holidayName) {
+      holiEl.innerText = `★ ${holidayName}`;
+      holiEl.style.display = 'block';
+    } else {
+      holiEl.style.display = 'none';
+    }
+
+    const listEl = document.getElementById('modalShiftList');
+    listEl.innerHTML = '';
+
+    shifts.forEach(item => {
+      const row = document.createElement('div');
+      row.className = `modal-item ${item.shift.class}`;
+      if (item.team === myTeam) {
+        row.style.border = '2px solid var(--primary-color)';
+      }
+      row.innerHTML = `<span>${item.team}조</span> <span>${item.shift.code}</span>`;
+      listEl.appendChild(row);
+    });
+
+    document.getElementById('detailModal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('detailModal').style.display = 'none';
+  }
+
+  function initApp() {
+    onBaseDateChange();
+  }
+
+  document.addEventListener('DOMContentLoaded', initApp);
+  window.onload = initApp;
+</script>
+
+</body>
+</html>
