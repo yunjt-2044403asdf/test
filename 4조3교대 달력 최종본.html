@@ -12,11 +12,11 @@
       --primary-color: #4A90E2;
       --holiday-color: #d9534f;
       
-      /* 근무 상태 색상 (내 조 선택 시 적용) */
-      --shift-a-color: #e3f2fd; /* A조 */
-      --shift-b-color: #fff3e0; /* B조 */
-      --shift-c-color: #f3e5f5; /* C조 */
-      --off-color: #ffebee;     /* 휴무 */
+      /* 근무 상태 색상 */
+      --shift-a-color: #e3f2fd; /* A조 - 연한 파랑 */
+      --shift-b-color: #fff8e1; /* B조 - 연한 노랑 */
+      --shift-c-color: #e8f5e9; /* C조 - 연한 초록 */
+      --off-color: #ffebee;     /* 휴무 - 연한 분홍/빨강 */
     }
 
     * {
@@ -97,7 +97,7 @@
       font-size: 0.85rem;
     }
 
-    /* 클릭 가능한 달력 제목 (캘린더 아이콘 포함) */
+    /* 클릭 가능한 달력 제목 (아이콘 포함) */
     .calendar-header h2 {
       font-size: 1.15rem;
       font-weight: bold;
@@ -108,12 +108,19 @@
       user-select: none;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
     .calendar-header h2:hover {
       background-color: #e8f4fe;
       color: var(--primary-color);
+    }
+
+    .header-icon {
+      width: 18px;
+      height: 18px;
+      vertical-align: middle;
+      stroke: currentColor;
     }
 
     /* 달력 그리드 */
@@ -211,6 +218,7 @@
       font-weight: bold;
     }
 
+    /* 전체조 모드 시 소형 태그 */
     .shift-tag {
       font-size: 0.68rem;
       padding: 1px 3px;
@@ -227,24 +235,30 @@
       color: #000000;
     }
 
-    /* 내 조 선택 시 스타일 */
+    /* 개별 조 선택 시 적용되는 대형 근무 뱃지 */
+    .big-shift-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 4px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 1.25rem;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    /* 근무 상태 색상 지정 */
     .shift-A { background-color: var(--shift-a-color); color: #0d47a1; }
-    .shift-B { background-color: var(--shift-b-color); color: #e65100; }
-    .shift-C { background-color: var(--shift-c-color); color: #4a148c; }
+    .shift-B { background-color: var(--shift-b-color); color: #f57f17; } /* 노랑 계열 진한 글자 */
+    .shift-C { background-color: var(--shift-c-color); color: #1b5e20; } /* 초록 계열 진한 글자 */
     .shift-OFF { background-color: var(--off-color); color: #b71c1c; }
 
-    /* 미선택 조 전용 스타일 (흰색 바탕 / 검은 글자) */
     .shift-unselected {
       background-color: #ffffff;
       color: #333333;
       border: 1px solid #eee;
-    }
-
-    .my-team-highlight {
-      border: 1.5px solid var(--primary-color);
-      font-size: 0.72rem !important;
-      font-weight: 800 !important;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
     /* 모달 팝업 오버레이 */
@@ -378,9 +392,9 @@
 
     .ios-picker-cell.other-month {
       color: #48484a;
+      cursor: default;
     }
 
-    /* 선택된 날짜 (흰색 원 + 검은 글자) */
     .ios-picker-cell.selected {
       background-color: #ffffff !important;
       color: #000000 !important;
@@ -399,7 +413,6 @@
       margin-top: 22px;
     }
 
-    /* '오늘' 버튼 */
     .ios-btn-today {
       background: #48484a;
       color: #ffffff;
@@ -416,7 +429,6 @@
       background: #636366;
     }
 
-    /* '확인' 체크 버튼 */
     .ios-btn-confirm {
       width: 48px;
       height: 48px;
@@ -447,7 +459,7 @@
       .date-label { font-size: 0.8rem; }
       .holiday-name { font-size: 0.52rem; padding: 0 2px; }
       .shift-tag { font-size: 0.58rem; padding: 0 2px; margin-top: 1px; height: 13px; }
-      .my-team-highlight { font-size: 0.62rem !important; border-width: 1px; }
+      .big-shift-container { font-size: 0.95rem; margin-top: 2px; }
     }
   </style>
 </head>
@@ -459,7 +471,8 @@
   <div class="config-panel">
     <div class="config-group">
       <label for="myTeam"><b>내 조 선택:</b></label>
-      <select id="myTeam" onchange="renderCalendar()">
+      <select id="myTeam" onchange="onTeamChange()">
+        <option value="0">전체조</option>
         <option value="1">1조</option>
         <option value="2">2조</option>
         <option value="3">3조</option>
@@ -559,6 +572,12 @@
 
   const teamBaseIndices = { 1: 1, 2: 7, 3: 13, 4: 19 };
 
+  function onTeamChange() {
+    const selectedTeam = document.getElementById('myTeam').value;
+    localStorage.setItem('savedMyTeam', selectedTeam);
+    renderCalendar();
+  }
+
   function changeMonth(delta) {
     currentDate.setMonth(currentDate.getMonth() + delta);
     renderCalendar();
@@ -616,7 +635,6 @@
 
     holidays[formatDate(buddha)] = '부처님오신날';
 
-    // 설날 연휴
     const sPrev = new Date(seollal); sPrev.setDate(seollal.getDate() - 1);
     const sNext1 = new Date(seollal); sNext1.setDate(seollal.getDate() + 1);
     const sNext2 = new Date(seollal); sNext2.setDate(seollal.getDate() + 2);
@@ -625,7 +643,6 @@
     holidays[formatDate(sNext1)] = '설날 연휴';
     holidays[formatDate(sNext2)] = '설날 연휴';
 
-    // 추석 연휴
     const cPrev = new Date(chuseok); cPrev.setDate(chuseok.getDate() - 1);
     const cNext1 = new Date(chuseok); cNext1.setDate(chuseok.getDate() + 1);
     const cNext2 = new Date(chuseok); cNext2.setDate(chuseok.getDate() + 2);
@@ -665,8 +682,9 @@
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    // 메인 달력 제목에 캘린더 아이콘(📅) 표시
-    document.getElementById('monthTitle').innerText = `${year}년 ${month + 1}월 📅`;
+    const svgIcon = `<svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+    
+    document.getElementById('monthTitle').innerHTML = `${year}년 ${month + 1}월 ${svgIcon}`;
 
     const grid = document.getElementById('calendarGrid');
     
@@ -731,19 +749,21 @@
 
         const shift = pattern[teamPatternIdx];
         shiftsForDay.push({ team, shift });
+      }
 
-        const tag = document.createElement('div');
-        tag.classList.add('shift-tag');
-
-        if (team === myTeam) {
-          tag.classList.add(shift.class, 'my-team-highlight');
-          tag.innerHTML = `<span class="team-name"><b>${team}조</b></span> <span>${shift.code}</span>`;
-        } else {
-          tag.innerHTML = `<span class="team-name">${team}조</span> <span>${shift.code}</span>`;
-          tag.classList.add('shift-unselected');
-        }
-
-        cell.appendChild(tag);
+      if (myTeam === 0) {
+        shiftsForDay.forEach(item => {
+          const tag = document.createElement('div');
+          tag.classList.add('shift-tag', item.shift.class);
+          tag.innerHTML = `<span class="team-name"><b>${item.team}조</b></span> <span>${item.shift.code}</span>`;
+          cell.appendChild(tag);
+        });
+      } else {
+        const myShiftInfo = shiftsForDay[myTeam - 1].shift;
+        const bigTag = document.createElement('div');
+        bigTag.classList.add('big-shift-container', myShiftInfo.class);
+        bigTag.innerText = myShiftInfo.code;
+        cell.appendChild(bigTag);
       }
 
       cell.addEventListener('click', () => {
@@ -770,7 +790,9 @@
 
     shifts.forEach(item => {
       const row = document.createElement('div');
-      if (item.team === myTeam) {
+      if (myTeam === 0) {
+        row.className = `modal-item ${item.shift.class}`;
+      } else if (item.team === myTeam) {
         row.className = `modal-item ${item.shift.class}`;
         row.style.border = '2px solid var(--primary-color)';
       } else {
@@ -783,7 +805,7 @@
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-  /* iOS 스타일 미니 달력 피커 모달 함수들 */
+  /* iOS 스타일 미니 달력 피커 모달 */
   function openDatePickerModal() {
     pickerDate = new Date(currentDate);
     selectedPickerDate = new Date(currentDate);
@@ -800,7 +822,6 @@
     const pYear = pickerDate.getFullYear();
     const pMonth = pickerDate.getMonth();
 
-    // 팝업 달력 제목에 화살표 없이 'YYYY년 M월'만 표기
     document.getElementById('pickerMonthTitle').innerText = `${pYear}년 ${pMonth + 1}월`;
 
     const grid = document.getElementById('pickerGrid');
@@ -853,6 +874,14 @@
       });
 
       grid.appendChild(cell);
+    }
+
+    const totalCells = 42;
+    const currentCells = firstDay + lastDate;
+    for (let i = currentCells; i < totalCells; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'ios-picker-cell other-month';
+      grid.appendChild(empty);
     }
   }
 
@@ -909,6 +938,11 @@
   }
 
   function initApp() {
+    const savedTeam = localStorage.getItem('savedMyTeam');
+    if (savedTeam !== null) {
+      document.getElementById('myTeam').value = savedTeam;
+    }
+
     renderCalendar();
     initSwipeEvents();
   }
