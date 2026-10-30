@@ -4,19 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>4조 3교대 달력</title>
+  
+  <!-- PWA 연동 메타 태그 -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4A90E2">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="교대달력">
+
   <style>
     :root {
-      --bg-color: #f4f6f9;
-      --card-bg: #ffffff;
+      --bg-color: #f4f6f9;       /* 소프트 블루 그레이 배경 */
+      --card-bg: #ffffff;         /* 순백색 메인 카드 배경 */
       --text-color: #333333;
-      --primary-color: #4A90E2;
-      --holiday-color: #d9534f;
+      --primary-color: #4A90E2;   /* 블루 포인트 색상 */
+      --holiday-color: #d9534f;   /* 빨간색 (공휴일) */
       
       /* 근무 상태 색상 */
-      --shift-a-color: #e3f2fd; /* A조 - 연한 파랑 */
-      --shift-b-color: #fff8e1; /* B조 - 연한 노랑 */
-      --shift-c-color: #e8f5e9; /* C조 - 연한 초록 */
-      --off-color: #ffebee;     /* 휴무 - 연한 분홍/빨강 */
+      --shift-a-color: #e3f2fd;   /* A조 - 연한 파랑 */
+      --shift-b-color: #fff8e1;   /* B조 - 연한 노랑 */
+      --shift-c-color: #e8f5e9;   /* C조 - 연한 초록 */
+      --off-color: #ffebee;       /* 휴무 - 연한 분홍/빨강 */
     }
 
     * {
@@ -53,7 +61,6 @@
       color: #1a1a1a;
     }
 
-    /* 설정 영역 (내 조 선택만 배치) */
     .config-panel {
       background: #f8f9fa;
       padding: 10px;
@@ -76,9 +83,9 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 0.85rem;
+      background-color: #ffffff;
     }
 
-    /* 달력 헤더 */
     .calendar-header {
       display: flex;
       justify-content: space-between;
@@ -97,7 +104,6 @@
       font-size: 0.85rem;
     }
 
-    /* 클릭 가능한 달력 제목 (아이콘 포함) */
     .calendar-header h2 {
       font-size: 1.15rem;
       font-weight: bold;
@@ -123,7 +129,6 @@
       stroke: currentColor;
     }
 
-    /* 달력 그리드 */
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -143,7 +148,6 @@
     .day-header:nth-child(1) { color: var(--holiday-color); }
     .day-header:nth-child(7) { color: #0275d8; }
 
-    /* 셀 높이 고정 */
     .cell {
       height: 105px;
       background: #fff;
@@ -218,7 +222,6 @@
       font-weight: bold;
     }
 
-    /* 전체조 모드 시 소형 태그 */
     .shift-tag {
       font-size: 0.68rem;
       padding: 1px 3px;
@@ -235,7 +238,6 @@
       color: #000000;
     }
 
-    /* 개별 조 선택 시 적용되는 대형 근무 뱃지 */
     .big-shift-container {
       flex: 1;
       display: flex;
@@ -249,7 +251,6 @@
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
     }
 
-    /* 달력 셀 안의 메모 뱃지 */
     .cell-memo-badge {
       font-size: 0.62rem;
       color: #555;
@@ -264,7 +265,6 @@
       font-weight: 600;
     }
 
-    /* 근무 상태 색상 지정 */
     .shift-A { background-color: var(--shift-a-color); color: #0d47a1; }
     .shift-B { background-color: var(--shift-b-color); color: #f57f17; }
     .shift-C { background-color: var(--shift-c-color); color: #1b5e20; }
@@ -276,7 +276,6 @@
       border: 1px solid #eee;
     }
 
-    /* 모달 팝업 오버레이 */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -290,7 +289,6 @@
       padding: 20px;
     }
 
-    /* 상세 안내 모달 카드 */
     .modal-card {
       background: white;
       width: 100%;
@@ -338,7 +336,6 @@
       font-weight: bold;
     }
 
-    /* 상세 모달 내 메모 영역 */
     .modal-memo-section {
       margin-top: 14px;
       padding-top: 10px;
@@ -396,7 +393,6 @@
       cursor: pointer;
     }
 
-    /* iOS 스타일 다크 미니 달력 모달 */
     .ios-modal-card {
       background: rgba(38, 38, 42, 0.95);
       color: #ffffff;
@@ -582,7 +578,6 @@
     <div id="modalHolidayInfo" style="color: var(--holiday-color); font-weight: bold; margin-bottom: 8px; font-size: 0.9rem;"></div>
     <div class="modal-body" id="modalShiftList"></div>
 
-    <!-- 메모 작성 영역 -->
     <div class="modal-memo-section">
       <div class="memo-header-title">📝 메모</div>
       <textarea id="modalMemoInput" placeholder="이 날짜에 기억할 메모를 적어보세요..."></textarea>
@@ -598,9 +593,7 @@
 <div class="modal-overlay" id="datePickerModal" onclick="closeModal('datePickerModal', event)">
   <div class="ios-modal-card" onclick="event.stopPropagation()">
     <div class="ios-picker-header">
-      <div class="ios-picker-title" id="pickerMonthTitle">
-        2026년 10월
-      </div>
+      <div class="ios-picker-title" id="pickerMonthTitle"></div>
       <div class="ios-picker-nav">
         <button onclick="changePickerMonth(-1)">❮</button>
         <button onclick="changePickerMonth(1)">❯</button>
@@ -620,12 +613,11 @@
 
 <script>
   let currentDate = new Date();
-  const today = new Date();
+  let today = new Date();
 
-  // 팝업 피커 및 선택 날짜 상태값
   let pickerDate = new Date();
   let selectedPickerDate = new Date();
-  let activeModalDateStr = ''; // 현재 열려있는 모달의 날짜 (YYYY-MM-DD)
+  let activeModalDateStr = '';
 
   function parseSafeDate(dateStr) {
     if (!dateStr) return new Date();
@@ -651,7 +643,6 @@
 
   const PATTERN_LENGTH = pattern.length;
 
-  // 패턴 계산용 고정 기준점
   const FIXED_BASE_DATE = new Date(2026, 9, 29);
   FIXED_BASE_DATE.setHours(0,0,0,0);
 
@@ -663,7 +654,9 @@
     renderCalendar();
   }
 
+  /* 달 이동 시 30, 31일로 인한 2월 건너뜀 버그 보완 */
   function changeMonth(delta) {
+    currentDate.setDate(1);
     currentDate.setMonth(currentDate.getMonth() + delta);
     renderCalendar();
   }
@@ -675,92 +668,127 @@
     return `${y}-${m}-${date}`;
   }
 
-  function findSolarForLunar(year, targetLunarMonth, targetLunarDay) {
-    const startMonth = targetLunarMonth === 1 ? 0 : targetLunarMonth === 8 ? 7 : 3;
-    const searchStart = new Date(year, startMonth, 1);
-    
-    for (let d = 0; d < 70; d++) {
-      const cur = new Date(searchStart);
-      cur.setDate(searchStart.getDate() + d);
-      
-      const lunar = getLunarApprox(cur);
-      if (lunar.month === targetLunarMonth && lunar.day === targetLunarDay) {
-        return cur;
+  /* ===== 명절(음력) 날짜표 =====
+     한국천문연구원(KASI) 기준 양력 날짜. 형식: 연도: [설날, 부처님오신날, 추석] */
+  const LUNAR_TABLE = {
+    2024: ['02-10', '05-15', '09-17'],
+    2025: ['01-29', '05-05', '10-06'],
+    2026: ['02-17', '05-24', '09-25'],
+    2027: ['02-07', '05-13', '09-15'],
+    2028: ['01-26', '05-02', '10-03'],
+    2029: ['02-13', '05-20', '09-22'],
+    2030: ['02-03', '05-09', '09-12'],
+    2031: ['01-23', '05-28', '10-01']
+  };
+
+  const EXTRA_HOLIDAYS = {
+    '2024-04-10': '국회의원선거',
+    '2024-10-01': '임시공휴일',
+    '2025-01-27': '임시공휴일',
+    '2025-06-03': '대통령선거',
+    '2026-06-03': '지방선거'
+  };
+
+  function getLunarDate(d) {
+    try {
+      const t = new Date(d);
+      t.setHours(12, 0, 0, 0);
+      const formatter = new Intl.DateTimeFormat('ko-KR-u-ca-chinese', { month: 'numeric', day: 'numeric' });
+      let monthStr = '', dayNum = 0;
+      for (const part of formatter.formatToParts(t)) {
+        if (part.type === 'month') monthStr = part.value;
+        if (part.type === 'day') dayNum = parseInt(part.value, 10);
       }
+      return {
+        month: parseInt(monthStr.replace(/[^0-9]/g, ''), 10),
+        day: dayNum,
+        isLeap: monthStr.includes('윤') || monthStr.includes('b')
+      };
+    } catch (e) {
+      return { month: 0, day: 0, isLeap: false };
     }
-    return new Date(year, startMonth + 1, targetLunarDay);
   }
 
-  function getLunarApprox(date) {
-    const reference = new Date(2026, 1, 17);
-    const diff = Math.floor((date.getTime() - reference.getTime()) / (86400000));
-    const synodic = 29.530588;
-    let months = diff / synodic;
-    let day = Math.floor(((diff % synodic) + synodic) % synodic) + 1;
-    let month = (Math.floor(months) % 12 + 12) % 12 + 1;
-    return { month, day };
+  function getLunarHolidayDates(year) {
+    const mk = (md) => new Date(year, parseInt(md.slice(0, 2), 10) - 1, parseInt(md.slice(3), 10), 12);
+    if (LUNAR_TABLE[year]) {
+      const t = LUNAR_TABLE[year];
+      return { seol: mk(t[0]), buddha: mk(t[1]), chuseok: mk(t[2]) };
+    }
+    const r = {};
+    for (let c = new Date(year, 0, 1, 12); c.getFullYear() === year; c.setDate(c.getDate() + 1)) {
+      const l = getLunarDate(c);
+      if (l.isLeap) continue;
+      if (l.month === 1 && l.day === 1) r.seol = new Date(c);
+      else if (l.month === 4 && l.day === 8) r.buddha = new Date(c);
+      else if (l.month === 8 && l.day === 15) r.chuseok = new Date(c);
+    }
+    return r;
   }
 
   function getHolidays(year) {
-    const holidays = {};
-
-    const fixedHolidays = {
-      '01-01': '신정', '03-01': '삼일절', '05-05': '어린이날',
-      '06-06': '현충일', '08-15': '광복절', '10-03': '개천절',
-      '10-09': '한글날', '12-25': '성탄절'
+    const list = {};
+    const add = (d, name, sub) => {
+      const key = typeof d === 'string' ? d : formatDate(d);
+      (list[key] = list[key] || []).push({ name, sub });
     };
+    const shift = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
-    for (const [md, name] of Object.entries(fixedHolidays)) {
-      holidays[`${year}-${md}`] = name;
+    add(`${year}-01-01`, '신정', 'none');
+    add(`${year}-03-01`, '삼일절', 'weekend');
+    add(`${year}-05-05`, '어린이날', 'weekend');
+    add(`${year}-06-06`, '현충일', 'none');
+    add(`${year}-08-15`, '광복절', 'weekend');
+    add(`${year}-10-03`, '개천절', 'weekend');
+    add(`${year}-10-09`, '한글날', 'weekend');
+    add(`${year}-12-25`, '성탄절', 'weekend');
+    if (year >= 2026) {
+      add(`${year}-05-01`, '노동절', 'weekend');
+      add(`${year}-07-17`, '제헌절', 'weekend');
     }
 
-    const seollal = findSolarForLunar(year, 1, 1);
-    const chuseok = findSolarForLunar(year, 8, 15);
-    const buddha = findSolarForLunar(year, 4, 8);
+    const lunar = getLunarHolidayDates(year);
+    if (lunar.seol) {
+      add(shift(lunar.seol, -1), '설날 연휴', 'sunday');
+      add(lunar.seol, '설날', 'sunday');
+      add(shift(lunar.seol, 1), '설날 연휴', 'sunday');
+    }
+    if (lunar.buddha) add(lunar.buddha, '부처님오신날', 'weekend');
+    if (lunar.chuseok) {
+      add(shift(lunar.chuseok, -1), '추석 연휴', 'sunday');
+      add(lunar.chuseok, '추석', 'sunday');
+      add(shift(lunar.chuseok, 1), '추석 연휴', 'sunday');
+    }
 
-    holidays[formatDate(buddha)] = '부처님오신날';
+    for (const [k, name] of Object.entries(EXTRA_HOLIDAYS)) {
+      if (k.startsWith(year + '-')) add(k, name, 'none');
+    }
 
-    const sPrev = new Date(seollal); sPrev.setDate(seollal.getDate() - 1);
-    const sNext1 = new Date(seollal); sNext1.setDate(seollal.getDate() + 1);
-    const sNext2 = new Date(seollal); sNext2.setDate(seollal.getDate() + 2);
-    holidays[formatDate(sPrev)] = '설날 연휴';
-    holidays[formatDate(seollal)] = '설날';
-    holidays[formatDate(sNext1)] = '설날 연휴';
-    holidays[formatDate(sNext2)] = '설날 연휴';
+    const result = {};
+    for (const [k, arr] of Object.entries(list)) result[k] = arr[0].name;
 
-    const cPrev = new Date(chuseok); cPrev.setDate(chuseok.getDate() - 1);
-    const cNext1 = new Date(chuseok); cNext1.setDate(chuseok.getDate() + 1);
-    const cNext2 = new Date(chuseok); cNext2.setDate(chuseok.getDate() + 2);
-    holidays[formatDate(cPrev)] = '추석 연휴';
-    holidays[formatDate(chuseok)] = '추석';
-    holidays[formatDate(cNext1)] = '추석 연휴';
-    holidays[formatDate(cNext2)] = '추석 연휴';
+    const subs = {};
+    for (const k of Object.keys(list).sort()) {
+      const d = parseSafeDate(k);
+      const dow = d.getDay();
+      const overlap = list[k].length > 1;
+      const needs = list[k].some(e =>
+        (e.sub === 'weekend' && (dow === 0 || dow === 6 || overlap)) ||
+        (e.sub === 'sunday' && (dow === 0 || overlap))
+      );
+      if (!needs) continue;
 
-    const extraHolidayKeys = [formatDate(sNext2), formatDate(cNext2)];
-
-    const substituteHolidays = {};
-    for (const [dateStr, name] of Object.entries(holidays)) {
-      const d = parseSafeDate(dateStr);
-      const day = d.getDay();
-
-      if (name !== '신정' && name !== '현충일') {
-        if (day === 0) {
-          const subDate = new Date(d);
-          subDate.setDate(d.getDate() + 1);
-          const subKey = formatDate(subDate);
-          if (!holidays[subKey]) substituteHolidays[subKey] = '대체공휴일';
-        } else if (day === 6 && (name === '어린이날' || name.includes('설날') || name.includes('추석'))) {
-          if (extraHolidayKeys.includes(dateStr)) continue;
-
-          const subDate = new Date(d);
-          subDate.setDate(d.getDate() + 2);
-          const subKey = formatDate(subDate);
-          if (!holidays[subKey]) substituteHolidays[subKey] = '대체공휴일';
+      let cur = shift(d, 1);
+      while (true) {
+        const ck = formatDate(cur);
+        if (cur.getDay() !== 0 && !list[ck] && !subs[ck]) {
+          subs[ck] = '대체공휴일';
+          break;
         }
+        cur = shift(cur, 1);
       }
     }
-
-    return { ...holidays, ...substituteHolidays };
+    return { ...result, ...subs };
   }
 
   function renderCalendar() {
@@ -851,7 +879,6 @@
         cell.appendChild(bigTag);
       }
 
-      // 저장된 메모 확인 및 뱃지 표기
       const savedMemo = localStorage.getItem('memo_' + dateString);
       if (savedMemo) {
         const memoBadge = document.createElement('div');
@@ -868,7 +895,6 @@
     }
   }
 
-  /* 상세 정보 모달 팝업 & 메모 불러오기 */
   function openDetailModal(dateTitle, dateStr, holidayName, shifts, myTeam) {
     activeModalDateStr = dateStr;
     document.getElementById('modalDateTitle').innerText = dateTitle;
@@ -898,14 +924,12 @@
       listEl.appendChild(row);
     });
 
-    // 기존 저장된 메모 가져오기
     const savedMemo = localStorage.getItem('memo_' + dateStr) || '';
     document.getElementById('modalMemoInput').value = savedMemo;
 
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-  /* 메모 저장 기능 */
   function saveCurrentMemo() {
     if (!activeModalDateStr) return;
     const memoText = document.getElementById('modalMemoInput').value.trim();
@@ -920,7 +944,6 @@
     closeModal('detailModal');
   }
 
-  /* 메모 삭제 기능 */
   function deleteCurrentMemo() {
     if (!activeModalDateStr) return;
     localStorage.removeItem('memo_' + activeModalDateStr);
@@ -929,7 +952,6 @@
     closeModal('detailModal');
   }
 
-  /* iOS 스타일 미니 달력 피커 모달 */
   function openDatePickerModal() {
     pickerDate = new Date(currentDate);
     selectedPickerDate = new Date(currentDate);
@@ -937,7 +959,9 @@
     document.getElementById('datePickerModal').style.display = 'flex';
   }
 
+  /* 피커 모달 달 이동 버그 보완 */
   function changePickerMonth(delta) {
+    pickerDate.setDate(1);
     pickerDate.setMonth(pickerDate.getMonth() + delta);
     renderPickerCalendar();
   }
@@ -1028,7 +1052,6 @@
     document.getElementById(modalId).style.display = 'none';
   }
 
-  /* 모바일 좌우 스와이프 이벤트 설정 */
   function initSwipeEvents() {
     const container = document.getElementById('calendarContainer');
     let touchstartX = 0;
@@ -1053,15 +1076,18 @@
 
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
         if (deltaX < 0) {
-          changeMonth(1);  // 왼쪽 스와이프 -> 다음달
+          changeMonth(1);
         } else {
-          changeMonth(-1); // 오른쪽 스와이프 -> 이전달
+          changeMonth(-1);
         }
       }
     }
   }
 
   function initApp() {
+    currentDate = new Date();
+    today = new Date();
+
     const savedTeam = localStorage.getItem('savedMyTeam');
     if (savedTeam !== null) {
       document.getElementById('myTeam').value = savedTeam;
@@ -1071,7 +1097,29 @@
     initSwipeEvents();
   }
 
+  window.addEventListener('pageshow', () => {
+    currentDate = new Date();
+    today = new Date();
+    renderCalendar();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      currentDate = new Date();
+      today = new Date();
+      renderCalendar();
+    }
+  });
+
   document.addEventListener('DOMContentLoaded', initApp);
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('Service Worker 등록 성공:', reg.scope))
+        .catch((err) => console.error('Service Worker 등록 실패:', err));
+    });
+  }
 </script>
 
 </body>
