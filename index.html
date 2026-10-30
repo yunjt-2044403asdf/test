@@ -195,6 +195,21 @@
       display: inline-block;
     }
 
+    /* 법정 휴일이 아닌 4일째 연휴 텍스트 전용 스타일 (평일 색상 유지) */
+    .memo-holiday-name {
+      font-size: 0.52rem;
+      font-weight: 700;
+      color: #555555;
+      background: #f1f3f5;
+      padding: 1px 3px;
+      border-radius: 3px;
+      max-width: 60%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: inline-block;
+    }
+
     .cell.other-month {
       opacity: 0.25;
       cursor: default;
@@ -528,6 +543,7 @@
       .cell { height: 74px; padding: 1px 2px; }
       .date-label { font-size: 0.8rem; }
       .holiday-name { font-size: 0.48rem; padding: 0 2px; }
+      .memo-holiday-name { font-size: 0.48rem; padding: 0 2px; }
       .shift-tag { font-size: 0.58rem; padding: 0 2px; margin-top: 1px; height: 13px; }
       .big-shift-container { font-size: 0.95rem; margin-top: 2px; }
       .cell-memo-badge { font-size: 0.52rem; padding: 0 2px; }
@@ -729,9 +745,10 @@
 
   function getHolidays(year) {
     const list = {};
-    const add = (d, name, sub) => {
+    // textOnly: true면 빨간색 공휴일이 아니라 평일 칸에 텍스트 배지만 표시할 용도
+    const add = (d, name, sub, textOnly = false) => {
       const key = typeof d === 'string' ? d : formatDate(d);
-      (list[key] = list[key] || []).push({ name, sub });
+      (list[key] = list[key] || []).push({ name, sub, textOnly });
     };
     const shift = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
@@ -754,6 +771,7 @@
       const sDay = lunar.seol;
       const sNext1 = shift(lunar.seol, 1);
       const sNext2 = shift(lunar.seol, 2);
+      const sNext3 = shift(lunar.seol, 3); // 4번째 날 (텍스트 전용)
 
       add(sPrev, '설날 연휴', 'sunday');
       add(sDay, '설날', 'sunday');
@@ -764,6 +782,8 @@
       } else {
         add(sNext1, '설날 연휴', 'sunday');
         add(sNext2, '설날 연휴', 'sunday');
+        // 4일째 되는 날이 존재할 경우 빨간 공휴일이 아닌 텍스트 배지로만 추가
+        add(sNext3, '설날 연휴', 'none', true);
       }
     }
 
@@ -774,6 +794,7 @@
       const cDay = lunar.chuseok;
       const cNext1 = shift(lunar.chuseok, 1);
       const cNext2 = shift(lunar.chuseok, 2);
+      const cNext3 = shift(lunar.chuseok, 3); // 4번째 날 (텍스트 전용)
 
       add(cPrev, '추석 연휴', 'sunday');
       add(cDay, '추석', 'sunday');
@@ -784,6 +805,8 @@
       } else {
         add(cNext1, '추석 연휴', 'sunday');
         add(cNext2, '추석 연휴', 'sunday');
+        // 4일째 되는 날 (예: 2028년 10월 6일 등)은 공휴일 처리 대신 텍스트만 표시
+        add(cNext3, '추석 연휴', 'none', true);
       }
     }
 
@@ -791,18 +814,35 @@
       if (k.startsWith(year + '-')) add(k, name, 'none');
     }
 
-    const result = {};
+    // 실제 공휴일(빨간날)과 텍스트 전용 항목을 분리하여 관리
+    const holidayResult = {};
+    const textOnlyResult = {};
+
     for (const [k, arr] of Object.entries(list)) {
-      const uniqueNames = [...new Set(arr.map(e => e.name))];
-      result[k] = uniqueNames.join(' / ');
+      const realHolidays = arr.filter(e => !e.textOnly);
+      const textHolidays = arr.filter(e => e.textOnly);
+
+      if (realHolidays.length > 0) {
+        holidayResult[k] = [...new Set(realHolidays.map(e => e.name))].join(' / ');
+      }
+      if (textHolidays.length > 0) {
+        textOnlyResult[k] = [...new Set(textHolidays.map(e => e.name))].join(' / ');
+      }
     }
 
     const subs = {};
-    for (const k of Object.keys(list).sort()) {
+    // 대체공휴일 계산은 실제 공휴일(list 중 textOnly가 아닌 것들)을 기준으로 수행
+    const realList = {};
+    for (const [k, arr] of Object.entries(list)) {
+      const real = arr.filter(e => !e.textOnly);
+      if (real.length > 0) realList[k] = real;
+    }
+
+    for (const k of Object.keys(realList).sort()) {
       const d = parseSafeDate(k);
       const dow = d.getDay();
-      const overlap = list[k].length > 1;
-      const needs = list[k].some(e =>
+      const overlap = realList[k].length > 1;
+      const needs = realList[k].some(e =>
         (e.sub === 'weekend' && (dow === 0 || dow === 6 || overlap)) ||
         (e.sub === 'sunday' && (dow === 0 || overlap))
       );
@@ -811,8 +851,7 @@
       let cur = shift(d, 1);
       while (true) {
         const ck = formatDate(cur);
-        // [수정된 부분] 이미 지정된 공휴일(list)이나 선점된 대체공휴일(subs)을 모두 피해 빈 평일 찾기
-        if (cur.getDay() !== 0 && !list[ck] && !subs[ck]) {
+        if (cur.getDay() !== 0 && !realList[ck] && !subs[ck]) {
           subs[ck] = '대체공휴일';
           break;
         }
@@ -820,7 +859,7 @@
       }
     }
 
-    let finalHolidays = { ...result, ...subs };
+    let finalHolidays = { ...holidayResult, ...subs };
 
     for (const [k, name] of Object.entries(finalHolidays)) {
       if (name === '대체공휴일' && parseSafeDate(k).getDay() === 3) {
@@ -828,7 +867,8 @@
       }
     }
 
-    return finalHolidays;
+    // 최종 반환 시 실제 공휴일/대체공휴일 정보와 텍스트 전용 정보를 함께 전달
+    return { holidays: finalHolidays, textOnly: textOnlyResult };
   }
 
   function renderCalendar() {
@@ -849,7 +889,9 @@
     const lastDate = new Date(year, month + 1, 0).getDate();
     const myTeam = parseInt(document.getElementById('myTeam').value, 10);
 
-    const currentHolidays = getHolidays(year);
+    const holidayData = getHolidays(year);
+    const currentHolidays = holidayData.holidays;
+    const currentTextOnly = holidayData.textOnly;
 
     for (let i = 0; i < firstDay; i++) {
       const emptyCell = document.createElement('div');
@@ -867,6 +909,7 @@
       const dateString = formatDate(thisDate);
       const isHoliday = !!currentHolidays[dateString];
       const holidayName = currentHolidays[dateString] || '';
+      const textOnlyName = currentTextOnly[dateString] || '';
 
       if (isHoliday) {
         cell.classList.add('holiday');
@@ -886,6 +929,9 @@
       let dateHtml = `<span class="date-label">${date}</span>`;
       if (isHoliday) {
         dateHtml += `<span class="holiday-name" title="${holidayName}">${holidayName}</span>`;
+      } else if (textOnlyName) {
+        // 법정 휴일이 아닌 4일째 연휴는 회색빛 텍스트 배지로 표시
+        dateHtml += `<span class="memo-holiday-name" title="${textOnlyName}">${textOnlyName}</span>`;
       }
       dateEl.innerHTML = dateHtml;
       cell.appendChild(dateEl);
@@ -927,8 +973,9 @@
         cell.appendChild(memoBadge);
       }
 
+      const displayHolidayInfo = holidayName || textOnlyName;
       cell.addEventListener('click', () => {
-        openDetailModal(`${year}년 ${month + 1}월 ${date}일`, dateString, holidayName, shiftsForDay, myTeam);
+        openDetailModal(`${year}년 ${month + 1}월 ${date}일`, dateString, displayHolidayInfo, shiftsForDay, myTeam);
       });
 
       grid.appendChild(cell);
