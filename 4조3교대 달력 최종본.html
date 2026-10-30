@@ -12,7 +12,7 @@
       --primary-color: #4A90E2;
       --holiday-color: #d9534f;
       
-      /* 근무 상태 색상 */
+      /* 근무 상태 색상 (내 조 선택 시 적용) */
       --shift-a-color: #e3f2fd; /* A조 */
       --shift-b-color: #fff3e0; /* B조 */
       --shift-c-color: #f3e5f5; /* C조 */
@@ -43,7 +43,7 @@
       padding: 12px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      touch-action: pan-y; /* 세로 스크롤 허용하면서 터치 동작 최적화 */
+      touch-action: pan-y;
     }
 
     h1 {
@@ -104,7 +104,7 @@
       font-weight: bold;
     }
 
-    /* 달력 그리드 (크기 완전 고정) */
+    /* 달력 그리드 */
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -215,10 +215,18 @@
       color: #000000;
     }
 
+    /* 내 조 선택 시 스타일 */
     .shift-A { background-color: var(--shift-a-color); color: #0d47a1; }
     .shift-B { background-color: var(--shift-b-color); color: #e65100; }
     .shift-C { background-color: var(--shift-c-color); color: #4a148c; }
     .shift-OFF { background-color: var(--off-color); color: #b71c1c; }
+
+    /* 미선택 조 전용 스타일 (흰색 바탕 / 검은 글자) */
+    .shift-unselected {
+      background-color: #ffffff;
+      color: #333333;
+      border: 1px solid #eee;
+    }
 
     .my-team-highlight {
       border: 1.5px solid var(--primary-color);
@@ -568,12 +576,14 @@
         shiftsForDay.push({ team, shift });
 
         const tag = document.createElement('div');
-        tag.classList.add('shift-tag', shift.class);
+        tag.classList.add('shift-tag');
 
+        // 선택된 내 조와 미선택 조의 클래스 분기 처리
         if (team === myTeam) {
-          tag.classList.add('my-team-highlight');
+          tag.classList.add(shift.class, 'my-team-highlight');
           tag.innerHTML = `<span class="team-name"><b>${team}조</b></span> <span>${shift.code}</span>`;
         } else {
+          tag.classList.add('shift-unselected');
           tag.innerHTML = `<span class="team-name">${team}조</span> <span>${shift.code}</span>`;
         }
 
@@ -603,9 +613,11 @@
 
     shifts.forEach(item => {
       const row = document.createElement('div');
-      row.className = `modal-item ${item.shift.class}`;
       if (item.team === myTeam) {
+        row.className = `modal-item ${item.shift.class}`;
         row.style.border = '2px solid var(--primary-color)';
+      } else {
+        row.className = 'modal-item shift-unselected';
       }
       row.innerHTML = `<span>${item.team}조</span> <span>${item.shift.code}</span>`;
       listEl.appendChild(row);
@@ -641,12 +653,11 @@
       const deltaX = touchendX - touchstartX;
       const deltaY = touchendY - touchstartY;
 
-      // 수평 이동 거리가 수직 이동 거리보다 크고, 50px 이상 이동했을 때 실행
       if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
         if (deltaX < 0) {
-          changeMonth(1);  // 왼쪽으로 스와이프 -> 다음달
+          changeMonth(1);  // 왼쪽 스와이프 -> 다음달
         } else {
-          changeMonth(-1); // 오른쪽으로 스와이프 -> 이전달
+          changeMonth(-1); // 오른쪽 스와이프 -> 이전달
         }
       }
     }
