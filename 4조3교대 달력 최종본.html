@@ -241,7 +241,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: 4px;
+      margin-top: 2px;
       border-radius: 6px;
       font-weight: 800;
       font-size: 1.25rem;
@@ -249,10 +249,25 @@
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
     }
 
+    /* 달력 셀 안의 메모 뱃지 */
+    .cell-memo-badge {
+      font-size: 0.62rem;
+      color: #555;
+      background: #fff8c5;
+      border: 1px solid #ffe082;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 600;
+    }
+
     /* 근무 상태 색상 지정 */
     .shift-A { background-color: var(--shift-a-color); color: #0d47a1; }
-    .shift-B { background-color: var(--shift-b-color); color: #f57f17; } /* 노랑 계열 진한 글자 */
-    .shift-C { background-color: var(--shift-c-color); color: #1b5e20; } /* 초록 계열 진한 글자 */
+    .shift-B { background-color: var(--shift-b-color); color: #f57f17; }
+    .shift-C { background-color: var(--shift-c-color); color: #1b5e20; }
     .shift-OFF { background-color: var(--off-color); color: #b71c1c; }
 
     .shift-unselected {
@@ -279,7 +294,7 @@
     .modal-card {
       background: white;
       width: 100%;
-      max-width: 320px;
+      max-width: 330px;
       border-radius: 16px;
       padding: 18px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.25);
@@ -321,6 +336,64 @@
       border-radius: 6px;
       font-size: 0.88rem;
       font-weight: bold;
+    }
+
+    /* 상세 모달 내 메모 영역 */
+    .modal-memo-section {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+    }
+
+    .memo-header-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #444;
+      margin-bottom: 6px;
+    }
+
+    #modalMemoInput {
+      width: 100%;
+      height: 60px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.85rem;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #modalMemoInput:focus {
+      border-color: var(--primary-color);
+    }
+
+    .memo-btn-group {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .btn-memo-save {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    .btn-memo-delete {
+      background: #f1f3f5;
+      color: #495057;
+      border: 1px solid #ced4da;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
     }
 
     /* iOS 스타일 다크 미니 달력 모달 */
@@ -460,6 +533,7 @@
       .holiday-name { font-size: 0.52rem; padding: 0 2px; }
       .shift-tag { font-size: 0.58rem; padding: 0 2px; margin-top: 1px; height: 13px; }
       .big-shift-container { font-size: 0.95rem; margin-top: 2px; }
+      .cell-memo-badge { font-size: 0.52rem; padding: 0 2px; }
     }
   </style>
 </head>
@@ -498,7 +572,7 @@
   </div>
 </div>
 
-<!-- 상세 정보 모달 팝업 -->
+<!-- 상세 정보 및 메모 모달 팝업 -->
 <div class="modal-overlay" id="detailModal" onclick="closeModal('detailModal', event)">
   <div class="modal-card" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -507,6 +581,16 @@
     </div>
     <div id="modalHolidayInfo" style="color: var(--holiday-color); font-weight: bold; margin-bottom: 8px; font-size: 0.9rem;"></div>
     <div class="modal-body" id="modalShiftList"></div>
+
+    <!-- 메모 작성 영역 -->
+    <div class="modal-memo-section">
+      <div class="memo-header-title">📝 메모</div>
+      <textarea id="modalMemoInput" placeholder="이 날짜에 기억할 메모를 적어보세요..."></textarea>
+      <div class="memo-btn-group">
+        <button class="btn-memo-delete" onclick="deleteCurrentMemo()">삭제</button>
+        <button class="btn-memo-save" onclick="saveCurrentMemo()">저장</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -538,9 +622,10 @@
   let currentDate = new Date();
   const today = new Date();
 
-  // 팝업 피커 상태값
+  // 팝업 피커 및 선택 날짜 상태값
   let pickerDate = new Date();
   let selectedPickerDate = new Date();
+  let activeModalDateStr = ''; // 현재 열려있는 모달의 날짜 (YYYY-MM-DD)
 
   function parseSafeDate(dateStr) {
     if (!dateStr) return new Date();
@@ -766,17 +851,28 @@
         cell.appendChild(bigTag);
       }
 
+      // 저장된 메모 확인 및 뱃지 표기
+      const savedMemo = localStorage.getItem('memo_' + dateString);
+      if (savedMemo) {
+        const memoBadge = document.createElement('div');
+        memoBadge.classList.add('cell-memo-badge');
+        memoBadge.innerText = `📝 ${savedMemo}`;
+        cell.appendChild(memoBadge);
+      }
+
       cell.addEventListener('click', () => {
-        openDetailModal(`${year}년 ${month + 1}월 ${date}일`, holidayName, shiftsForDay, myTeam);
+        openDetailModal(`${year}년 ${month + 1}월 ${date}일`, dateString, holidayName, shiftsForDay, myTeam);
       });
 
       grid.appendChild(cell);
     }
   }
 
-  /* 상세 정보 모달 팝업 */
-  function openDetailModal(dateTitle, holidayName, shifts, myTeam) {
+  /* 상세 정보 모달 팝업 & 메모 불러오기 */
+  function openDetailModal(dateTitle, dateStr, holidayName, shifts, myTeam) {
+    activeModalDateStr = dateStr;
     document.getElementById('modalDateTitle').innerText = dateTitle;
+    
     const holiEl = document.getElementById('modalHolidayInfo');
     if (holidayName) {
       holiEl.innerText = `★ ${holidayName}`;
@@ -802,7 +898,35 @@
       listEl.appendChild(row);
     });
 
+    // 기존 저장된 메모 가져오기
+    const savedMemo = localStorage.getItem('memo_' + dateStr) || '';
+    document.getElementById('modalMemoInput').value = savedMemo;
+
     document.getElementById('detailModal').style.display = 'flex';
+  }
+
+  /* 메모 저장 기능 */
+  function saveCurrentMemo() {
+    if (!activeModalDateStr) return;
+    const memoText = document.getElementById('modalMemoInput').value.trim();
+    
+    if (memoText) {
+      localStorage.setItem('memo_' + activeModalDateStr, memoText);
+    } else {
+      localStorage.removeItem('memo_' + activeModalDateStr);
+    }
+    
+    renderCalendar();
+    closeModal('detailModal');
+  }
+
+  /* 메모 삭제 기능 */
+  function deleteCurrentMemo() {
+    if (!activeModalDateStr) return;
+    localStorage.removeItem('memo_' + activeModalDateStr);
+    document.getElementById('modalMemoInput').value = '';
+    renderCalendar();
+    closeModal('detailModal');
   }
 
   /* iOS 스타일 미니 달력 피커 모달 */
