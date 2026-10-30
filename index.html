@@ -567,7 +567,7 @@
 
   <div class="calendar-header">
     <button onclick="changeMonth(-1)">◀ 이전달</button>
-    <h2 id="monthTitle" onclick="openDatePickerModal()" title="월 이동하기"></h2>
+    <h2 id="monthTitle" onclick="openMonthPickerModal()" title="월 이동하기"></h2>
     <button onclick="changeMonth(1)">다음달 ▶</button>
   </div>
 
@@ -603,8 +603,8 @@
   </div>
 </div>
 
-<!-- iOS 스타일 월 선택 이동 팝업 모달 -->
-<div class="modal-overlay" id="datePickerModal" onclick="closeModal('datePickerModal', event)">
+<!-- iOS 스타일 월 선택 전용 팝업 모달 -->
+<div class="modal-overlay" id="monthPickerModal" onclick="closeModal('monthPickerModal', event)">
   <div class="ios-modal-card" onclick="event.stopPropagation()">
     <div class="ios-picker-header">
       <div class="ios-picker-title" id="pickerYearTitle"></div>
@@ -614,7 +614,7 @@
       </div>
     </div>
 
-    <!-- 1~12월 선택 그리드 -->
+    <!-- 1~12월 선택 그리드 (일별 날짜 전면 제거됨) -->
     <div class="ios-month-grid" id="pickerMonthGrid">
       <!-- 동적 생성 -->
     </div>
@@ -1048,12 +1048,12 @@
     closeModal('detailModal');
   }
 
-  /* ===== 월 선택 팝업 관련 함수 ===== */
-  function openDatePickerModal() {
+  /* ===== 월 선택 전용 팝업 관련 함수 ===== */
+  function openMonthPickerModal() {
     pickerYear = currentDate.getFullYear();
     selectedPickerMonth = currentDate.getMonth();
     renderPickerMonths();
-    document.getElementById('datePickerModal').style.display = 'flex';
+    document.getElementById('monthPickerModal').style.display = 'flex';
   }
 
   function changePickerYear(delta) {
@@ -1095,7 +1095,7 @@
     sessionStorage.setItem('currentYear', currentDate.getFullYear());
     sessionStorage.setItem('currentMonth', currentDate.getMonth());
     renderCalendar();
-    closeModal('datePickerModal');
+    closeModal('monthPickerModal');
   }
 
   function confirmPickerSelection() {
@@ -1103,7 +1103,7 @@
     sessionStorage.setItem('currentYear', currentDate.getFullYear());
     sessionStorage.setItem('currentMonth', currentDate.getMonth());
     renderCalendar();
-    closeModal('datePickerModal');
+    closeModal('monthPickerModal');
   }
 
   function closeModal(modalId, event) {
