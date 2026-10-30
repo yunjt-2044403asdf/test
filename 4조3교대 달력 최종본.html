@@ -318,7 +318,7 @@
 
     <div class="config-group">
       <label for="baseDate"><b>달력 이동 (기준일):</b></label>
-      <input type="date" id="baseDate" value="2026-10-29" onchange="onBaseDateChange()">
+      <input type="date" id="baseDate" onchange="onBaseDateChange()">
     </div>
   </div>
 
@@ -379,6 +379,7 @@
 
   const PATTERN_LENGTH = pattern.length;
 
+  // 패턴 계산용 고정 기준점
   const FIXED_BASE_DATE = new Date(2026, 9, 29);
   FIXED_BASE_DATE.setHours(0,0,0,0);
 
@@ -607,6 +608,8 @@
   }
 
   function initApp() {
+    // 앱 실행 시 당일 날짜로 기준일 자동 설정
+    document.getElementById('baseDate').value = formatDate(today);
     onBaseDateChange();
   }
 
