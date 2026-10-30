@@ -1,0 +1,21 @@
+{
+  "name": "4조 3교대 달력",
+  "short_name": "교대달력",
+  "description": "4조 3교대 근무 및 메모 관리 달력 앱",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#4A90E2",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
