@@ -4,8 +4,8 @@
   "description": "4조 3교대 근무 및 메모 관리 달력 앱",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f4f6f9",
-  "theme_color": "#4A90E2",
+  "background_color": "#FFF9F5",
+  "theme_color": "#FF5722",
   "icons": [
     {
       "src": "icon-192.png",
