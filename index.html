@@ -658,7 +658,6 @@
   function changeMonth(delta) {
     currentDate.setDate(1);
     currentDate.setMonth(currentDate.getMonth() + delta);
-    // 사용자가 달을 직접 바꿀 때는 현재 세션에 기억되도록 저장
     sessionStorage.setItem('currentYear', currentDate.getFullYear());
     sessionStorage.setItem('currentMonth', currentDate.getMonth());
     renderCalendar();
@@ -812,6 +811,7 @@
       let cur = shift(d, 1);
       while (true) {
         const ck = formatDate(cur);
+        // [수정된 부분] 이미 지정된 공휴일(list)이나 선점된 대체공휴일(subs)을 모두 피해 빈 평일 찾기
         if (cur.getDay() !== 0 && !list[ck] && !subs[ck]) {
           subs[ck] = '대체공휴일';
           break;
@@ -1127,7 +1127,6 @@
     }
   }
 
-  /* 앱 실행 시 세션 체크: 완전히 닫았다 켰을 때만 오늘 날짜로 초기화 */
   function initApp() {
     today = new Date();
 
@@ -1135,10 +1134,8 @@
     const savedMonth = sessionStorage.getItem('currentMonth');
 
     if (savedYear !== null && savedMonth !== null) {
-      // 앱이 켜져 있는 상태에서 재진입한 경우: 이전에 보던 달 유지
       currentDate = new Date(parseInt(savedYear, 10), parseInt(savedMonth, 10), 1);
     } else {
-      // 앱을 완전히 닫았다가 새로 켠 경우: 오늘 날짜로 설정하고 세션 저장
       currentDate = new Date();
       sessionStorage.setItem('currentYear', currentDate.getFullYear());
       sessionStorage.setItem('currentMonth', currentDate.getMonth());
