@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shift-calendar-v1';
+const CACHE_NAME = 'shift-calendar-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
