@@ -1,7 +1,7 @@
 const CACHE_NAME = 'shift-calendar-v1';
 const ASSETS_TO_CACHE = [
   './',
-  './4조 3교대 달력.html',
+  './4조3교대 달력 최종본.html',
   './manifest.json'
 ];
 
@@ -40,7 +40,7 @@ self.addEventListener('fetch', (event) => {
       }
       return fetch(event.request).catch(() => {
         if (event.request.mode === 'navigate') {
-          return caches.match('./4조 3교대 달력.html');
+          return caches.match('./4조3교대 달력 최종본.html');
         }
       });
     })
