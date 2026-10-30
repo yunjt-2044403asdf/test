@@ -451,17 +451,23 @@
 
     holidays[formatDate(buddha)] = '부처님오신날';
 
+    // 설날 연휴 (기존 3일 유지 + 뒤에 하루 더 추가하여 총 4일 연휴)
     const sPrev = new Date(seollal); sPrev.setDate(seollal.getDate() - 1);
-    const sNext = new Date(seollal); sNext.setDate(seollal.getDate() + 1);
+    const sNext1 = new Date(seollal); sNext1.setDate(seollal.getDate() + 1);
+    const sNext2 = new Date(seollal); sNext2.setDate(seollal.getDate() + 2);
     holidays[formatDate(sPrev)] = '설날 연휴';
     holidays[formatDate(seollal)] = '설날';
-    holidays[formatDate(sNext)] = '설날 연휴';
+    holidays[formatDate(sNext1)] = '설날 연휴';
+    holidays[formatDate(sNext2)] = '설날 연휴';
 
+    // 추석 연휴 (기존 3일 유지 + 뒤에 하루 더 추가하여 총 4일 연휴)
     const cPrev = new Date(chuseok); cPrev.setDate(chuseok.getDate() - 1);
-    const cNext = new Date(chuseok); cNext.setDate(chuseok.getDate() + 1);
+    const cNext1 = new Date(chuseok); cNext1.setDate(chuseok.getDate() + 1);
+    const cNext2 = new Date(chuseok); cNext2.setDate(chuseok.getDate() + 2);
     holidays[formatDate(cPrev)] = '추석 연휴';
     holidays[formatDate(chuseok)] = '추석';
-    holidays[formatDate(cNext)] = '추석 연휴';
+    holidays[formatDate(cNext1)] = '추석 연휴';
+    holidays[formatDate(cNext2)] = '추석 연휴';
 
     const substituteHolidays = {};
     for (const [dateStr, name] of Object.entries(holidays)) {
@@ -591,8 +597,7 @@
     listEl.innerHTML = '';
 
     shifts.forEach(item => {
-      const row = document.createElement('div');
-      row.className = `modal-item ${item.shift.class}`;
+      const row = document.className = `modal-item ${item.shift.class}`;
       if (item.team === myTeam) {
         row.style.border = '2px solid var(--primary-color)';
       }
@@ -608,13 +613,11 @@
   }
 
   function initApp() {
-    // 앱 실행 시 당일 날짜로 기준일 자동 설정
     document.getElementById('baseDate').value = formatDate(today);
     onBaseDateChange();
   }
 
   document.addEventListener('DOMContentLoaded', initApp);
-  window.onload = initApp;
 </script>
 
 </body>
