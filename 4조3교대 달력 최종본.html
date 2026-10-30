@@ -53,7 +53,7 @@
       color: #1a1a1a;
     }
 
-    /* 설정 영역 (내 조 선택만 우측 정렬 배치) */
+    /* 설정 영역 (내 조 선택만 배치) */
     .config-panel {
       background: #f8f9fa;
       padding: 10px;
@@ -332,14 +332,6 @@
       font-size: 1.25rem;
       font-weight: 700;
       color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ios-picker-title span.arrow {
-      color: #0a84ff;
-      font-size: 1.1rem;
     }
 
     .ios-picker-nav {
@@ -510,7 +502,7 @@
   <div class="ios-modal-card" onclick="event.stopPropagation()">
     <div class="ios-picker-header">
       <div class="ios-picker-title" id="pickerMonthTitle">
-        2026년 10월 <span class="arrow">❯</span>
+        2026년 10월
       </div>
       <div class="ios-picker-nav">
         <button onclick="changePickerMonth(-1)">❮</button>
@@ -673,7 +665,7 @@
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    // 메인 달력 제목에 캘린더 아이콘(📅) 추가
+    // 메인 달력 제목에 캘린더 아이콘(📅) 표시
     document.getElementById('monthTitle').innerText = `${year}년 ${month + 1}월 📅`;
 
     const grid = document.getElementById('calendarGrid');
@@ -808,7 +800,8 @@
     const pYear = pickerDate.getFullYear();
     const pMonth = pickerDate.getMonth();
 
-    document.getElementById('pickerMonthTitle').innerHTML = `${pYear}년 ${pMonth + 1}월 <span class="arrow">❯</span>`;
+    // 팝업 달력 제목에 화살표 없이 'YYYY년 M월'만 표기
+    document.getElementById('pickerMonthTitle').innerText = `${pYear}년 ${pMonth + 1}월`;
 
     const grid = document.getElementById('pickerGrid');
     grid.innerHTML = '';
