@@ -747,17 +747,20 @@
       add(`${year}-07-17`, '제헌절', 'weekend');
     }
 
+    /* 명절 연휴 지정 (당일 기준 -1일, 당일, +1일, +2일 지정) */
     const lunar = getLunarHolidayDates(year);
     if (lunar.seol) {
       add(shift(lunar.seol, -1), '설날 연휴', 'sunday');
       add(lunar.seol, '설날', 'sunday');
       add(shift(lunar.seol, 1), '설날 연휴', 'sunday');
+      add(shift(lunar.seol, 2), '설날 연휴', 'sunday'); // 명절 날 뒤로 +2일째 추가
     }
     if (lunar.buddha) add(lunar.buddha, '부처님오신날', 'weekend');
     if (lunar.chuseok) {
       add(shift(lunar.chuseok, -1), '추석 연휴', 'sunday');
       add(lunar.chuseok, '추석', 'sunday');
       add(shift(lunar.chuseok, 1), '추석 연휴', 'sunday');
+      add(shift(lunar.chuseok, 2), '추석 연휴', 'sunday'); // 명절 날 뒤로 +2일째 추가
     }
 
     for (const [k, name] of Object.entries(EXTRA_HOLIDAYS)) {
@@ -959,7 +962,6 @@
     document.getElementById('datePickerModal').style.display = 'flex';
   }
 
-  /* 피커 모달 달 이동 버그 보완 */
   function changePickerMonth(delta) {
     pickerDate.setDate(1);
     pickerDate.setMonth(pickerDate.getMonth() + delta);
