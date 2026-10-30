@@ -1,7 +1,7 @@
 const CACHE_NAME = 'shift-calendar-v1';
 const ASSETS_TO_CACHE = [
   './',
-  './index.html',
+  './4조 3교대 달력.html',
   './manifest.json'
 ];
 
