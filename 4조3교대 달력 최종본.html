@@ -451,17 +451,23 @@
 
     holidays[formatDate(buddha)] = '부처님오신날';
 
+    // 설날 연휴 (당일 전날, 당일, 당일 다음날, 당일 다다음날 총 4일)
     const sPrev = new Date(seollal); sPrev.setDate(seollal.getDate() - 1);
-    const sNext = new Date(seollal); sNext.setDate(seollal.getDate() + 1);
+    const sNext1 = new Date(seollal); sNext1.setDate(seollal.getDate() + 1);
+    const sNext2 = new Date(seollal); sNext2.setDate(seollal.getDate() + 2);
     holidays[formatDate(sPrev)] = '설날 연휴';
     holidays[formatDate(seollal)] = '설날';
-    holidays[formatDate(sNext)] = '설날 연휴';
+    holidays[formatDate(sNext1)] = '설날 연휴';
+    holidays[formatDate(sNext2)] = '설날 연휴';
 
+    // 추석 연휴 (당일 전날, 당일, 당일 다음날, 당일 다다음날 총 4일)
     const cPrev = new Date(chuseok); cPrev.setDate(chuseok.getDate() - 1);
-    const cNext = new Date(chuseok); cNext.setDate(chuseok.getDate() + 1);
+    const cNext1 = new Date(chuseok); cNext1.setDate(chuseok.getDate() + 1);
+    const cNext2 = new Date(chuseok); cNext2.setDate(chuseok.getDate() + 2);
     holidays[formatDate(cPrev)] = '추석 연휴';
     holidays[formatDate(chuseok)] = '추석';
-    holidays[formatDate(cNext)] = '추석 연휴';
+    holidays[formatDate(cNext1)] = '추석 연휴';
+    holidays[formatDate(cNext2)] = '추석 연휴';
 
     const substituteHolidays = {};
     for (const [dateStr, name] of Object.entries(holidays)) {
@@ -512,110 +518,3 @@
 
     for (let date = 1; date <= lastDate; date++) {
       const cell = document.createElement('div');
-      cell.classList.add('cell');
-
-      const thisDate = new Date(year, month, date);
-      thisDate.setHours(0,0,0,0);
-
-      const dateString = formatDate(thisDate);
-      const isHoliday = !!currentHolidays[dateString];
-      const holidayName = currentHolidays[dateString] || '';
-
-      if (isHoliday) {
-        cell.classList.add('holiday');
-      }
-
-      if (
-        thisDate.getFullYear() === today.getFullYear() &&
-        thisDate.getMonth() === today.getMonth() &&
-        thisDate.getDate() === today.getDate()
-      ) {
-        cell.classList.add('today');
-      }
-
-      const dateEl = document.createElement('div');
-      dateEl.classList.add('date-num');
-      
-      let dateHtml = `<span class="date-label">${date}</span>`;
-      if (isHoliday) {
-        dateHtml += `<span class="holiday-name">${holidayName}</span>`;
-      }
-      dateEl.innerHTML = dateHtml;
-      cell.appendChild(dateEl);
-
-      const diffTime = thisDate.getTime() - FIXED_BASE_DATE.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      const shiftsForDay = [];
-
-      for (let team = 1; team <= 4; team++) {
-        const baseIdx = teamBaseIndices[team];
-        let teamPatternIdx = (baseIdx + diffDays) % PATTERN_LENGTH;
-        if (teamPatternIdx < 0) teamPatternIdx += PATTERN_LENGTH;
-
-        const shift = pattern[teamPatternIdx];
-        shiftsForDay.push({ team, shift });
-
-        const tag = document.createElement('div');
-        tag.classList.add('shift-tag', shift.class);
-
-        if (team === myTeam) {
-          tag.classList.add('my-team-highlight');
-          tag.innerHTML = `<span class="team-name"><b>${team}조</b></span> <span>${shift.code}</span>`;
-        } else {
-          tag.innerHTML = `<span class="team-name">${team}조</span> <span>${shift.code}</span>`;
-        }
-
-        cell.appendChild(tag);
-      }
-
-      cell.addEventListener('click', () => {
-        openModal(`${year}년 ${month + 1}월 ${date}일`, holidayName, shiftsForDay, myTeam);
-      });
-
-      grid.appendChild(cell);
-    }
-  }
-
-  function openModal(dateTitle, holidayName, shifts, myTeam) {
-    document.getElementById('modalDateTitle').innerText = dateTitle;
-    const holiEl = document.getElementById('modalHolidayInfo');
-    if (holidayName) {
-      holiEl.innerText = `★ ${holidayName}`;
-      holiEl.style.display = 'block';
-    } else {
-      holiEl.style.display = 'none';
-    }
-
-    const listEl = document.getElementById('modalShiftList');
-    listEl.innerHTML = '';
-
-    shifts.forEach(item => {
-      const row = document.createElement('div');
-      row.className = `modal-item ${item.shift.class}`;
-      if (item.team === myTeam) {
-        row.style.border = '2px solid var(--primary-color)';
-      }
-      row.innerHTML = `<span>${item.team}조</span> <span>${item.shift.code}</span>`;
-      listEl.appendChild(row);
-    });
-
-    document.getElementById('detailModal').style.display = 'flex';
-  }
-
-  function closeModal() {
-    document.getElementById('detailModal').style.display = 'none';
-  }
-
-  function initApp() {
-    // 앱 실행 시 당일 날짜로 기준일 자동 설정
-    document.getElementById('baseDate').value = formatDate(today);
-    onBaseDateChange();
-  }
-
-  document.addEventListener('DOMContentLoaded', initApp);
-  window.onload = initApp;
-</script>
-
-</body>
-</html>
