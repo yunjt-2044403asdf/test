@@ -60,10 +60,8 @@
       border-radius: 8px;
       margin-bottom: 12px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
     }
 
     .config-group {
@@ -99,9 +97,23 @@
       font-size: 0.85rem;
     }
 
+    /* 클릭 가능하도록 스타일 수정된 달력 제목 */
     .calendar-header h2 {
       font-size: 1.1rem;
       font-weight: bold;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background-color 0.2s;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .calendar-header h2:hover {
+      background-color: #e8f4fe;
+      color: var(--primary-color);
     }
 
     /* 달력 그리드 */
@@ -235,7 +247,7 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
-    /* 상세 안내 팝업 모달 */
+    /* 모달 팝업 공통 스타일 */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -282,7 +294,7 @@
     .modal-body {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 10px;
     }
 
     .modal-item {
@@ -294,12 +306,38 @@
       font-weight: bold;
     }
 
+    /* 이동 팝업용 개별 버튼 */
+    .modal-btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .modal-btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .modal-btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+
     @media (max-width: 600px) {
       body { padding: 4px; }
       .container { padding: 6px; border-radius: 8px; }
       h1 { font-size: 1.05rem; margin-bottom: 6px; }
-      .config-panel { padding: 6px; gap: 4px; flex-direction: column; align-items: stretch; }
-      .config-group { justify-content: space-between; }
+      .config-panel { padding: 6px; }
       .calendar-grid { gap: 2px; }
       .cell { height: 74px; padding: 1px 2px; }
       .date-label { font-size: 0.8rem; }
@@ -324,16 +362,11 @@
         <option value="4">4조</option>
       </select>
     </div>
-
-    <div class="config-group">
-      <label for="baseDate"><b>달력 이동 (기준일):</b></label>
-      <input type="date" id="baseDate" onchange="onBaseDateChange()">
-    </div>
   </div>
 
   <div class="calendar-header">
     <button onclick="changeMonth(-1)">◀ 이전달</button>
-    <h2 id="monthTitle"></h2>
+    <h2 id="monthTitle" onclick="openDatePickerModal()" title="날짜 이동하기"></h2>
     <button onclick="changeMonth(1)">다음달 ▶</button>
   </div>
 
@@ -349,14 +382,32 @@
 </div>
 
 <!-- 상세 모달 팝업 -->
-<div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
+<div class="modal-overlay" id="detailModal" onclick="closeModal('detailModal', event)">
   <div class="modal-card" onclick="event.stopPropagation()">
     <div class="modal-header">
       <div class="modal-title" id="modalDateTitle">날짜 상세 정보</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
     </div>
     <div id="modalHolidayInfo" style="color: var(--holiday-color); font-weight: bold; margin-bottom: 8px; font-size: 0.9rem;"></div>
     <div class="modal-body" id="modalShiftList"></div>
+  </div>
+</div>
+
+<!-- 달력 이동(날짜 선택) 팝업 모달 -->
+<div class="modal-overlay" id="datePickerModal" onclick="closeModal('datePickerModal', event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">달력 이동 (기준일 선택)</div>
+      <button class="modal-close" onclick="closeModal('datePickerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label for="modalBaseDate" style="font-size: 0.85rem; font-weight: bold; color: #555;">이동할 날짜 선택:</label>
+      <input type="date" id="modalBaseDate" style="width: 100%; padding: 8px; font-size: 1rem;">
+      <div class="modal-btn-group">
+        <button class="modal-btn modal-btn-secondary" onclick="goToToday()">오늘로 이동</button>
+        <button class="modal-btn modal-btn-primary" onclick="confirmDateMove()">이동</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -396,15 +447,6 @@
 
   function changeMonth(delta) {
     currentDate.setMonth(currentDate.getMonth() + delta);
-    renderCalendar();
-  }
-
-  function onBaseDateChange() {
-    const val = document.getElementById('baseDate').value;
-    const baseDateInput = parseSafeDate(val);
-    if (!isNaN(baseDateInput.getTime())) {
-      currentDate = new Date(baseDateInput.getFullYear(), baseDateInput.getMonth(), 1);
-    }
     renderCalendar();
   }
 
@@ -460,7 +502,7 @@
 
     holidays[formatDate(buddha)] = '부처님오신날';
 
-    // 설날 연휴 (기존 3일 + 뒤에 하루 더 추가)
+    // 설날 연휴
     const sPrev = new Date(seollal); sPrev.setDate(seollal.getDate() - 1);
     const sNext1 = new Date(seollal); sNext1.setDate(seollal.getDate() + 1);
     const sNext2 = new Date(seollal); sNext2.setDate(seollal.getDate() + 2);
@@ -469,7 +511,7 @@
     holidays[formatDate(sNext1)] = '설날 연휴';
     holidays[formatDate(sNext2)] = '설날 연휴';
 
-    // 추석 연휴 (기존 3일 + 뒤에 하루 더 추가)
+    // 추석 연휴
     const cPrev = new Date(chuseok); cPrev.setDate(chuseok.getDate() - 1);
     const cNext1 = new Date(chuseok); cNext1.setDate(chuseok.getDate() + 1);
     const cNext2 = new Date(chuseok); cNext2.setDate(chuseok.getDate() + 2);
@@ -509,7 +551,8 @@
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    document.getElementById('monthTitle').innerText = `${year}년 ${month + 1}월`;
+    // 제목에 클릭 안내 아이콘 표시
+    document.getElementById('monthTitle').innerText = `${year}년 ${month + 1}월 📅`;
 
     const grid = document.getElementById('calendarGrid');
     
@@ -578,7 +621,6 @@
         const tag = document.createElement('div');
         tag.classList.add('shift-tag');
 
-        // 선택된 내 조와 미선택 조의 클래스 분기 처리
         if (team === myTeam) {
           tag.classList.add(shift.class, 'my-team-highlight');
           tag.innerHTML = `<span class="team-name"><b>${team}조</b></span> <span>${shift.code}</span>`;
@@ -591,14 +633,15 @@
       }
 
       cell.addEventListener('click', () => {
-        openModal(`${year}년 ${month + 1}월 ${date}일`, holidayName, shiftsForDay, myTeam);
+        openDetailModal(`${year}년 ${month + 1}월 ${date}일`, holidayName, shiftsForDay, myTeam);
       });
 
       grid.appendChild(cell);
     }
   }
 
-  function openModal(dateTitle, holidayName, shifts, myTeam) {
+  /* 상세 정보 팝업 관련 */
+  function openDetailModal(dateTitle, holidayName, shifts, myTeam) {
     document.getElementById('modalDateTitle').innerText = dateTitle;
     const holiEl = document.getElementById('modalHolidayInfo');
     if (holidayName) {
@@ -626,11 +669,34 @@
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-  function closeModal() {
-    document.getElementById('detailModal').style.display = 'none';
+  /* 달력 이동(날짜 선택) 팝업 관련 */
+  function openDatePickerModal() {
+    document.getElementById('modalBaseDate').value = formatDate(currentDate);
+    document.getElementById('datePickerModal').style.display = 'flex';
   }
 
-  // 모바일 좌우 스와이프 이벤트 설정
+  function confirmDateMove() {
+    const val = document.getElementById('modalBaseDate').value;
+    const selectedDate = parseSafeDate(val);
+    if (!isNaN(selectedDate.getTime())) {
+      currentDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      renderCalendar();
+    }
+    closeModal('datePickerModal');
+  }
+
+  function goToToday() {
+    currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    renderCalendar();
+    closeModal('datePickerModal');
+  }
+
+  function closeModal(modalId, event) {
+    if (event) event.stopPropagation();
+    document.getElementById(modalId).style.display = 'none';
+  }
+
+  /* 모바일 좌우 스와이프 이벤트 설정 */
   function initSwipeEvents() {
     const container = document.getElementById('calendarContainer');
     let touchstartX = 0;
@@ -664,8 +730,7 @@
   }
 
   function initApp() {
-    document.getElementById('baseDate').value = formatDate(today);
-    onBaseDateChange();
+    renderCalendar();
     initSwipeEvents();
   }
 
