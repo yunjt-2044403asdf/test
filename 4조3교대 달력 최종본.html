@@ -451,7 +451,7 @@
 
     holidays[formatDate(buddha)] = '부처님오신날';
 
-    // 설날 연휴 (당일 전날, 당일, 당일 다음날, 당일 다다음날 총 4일)
+    // 기존 명절 3일(전날, 당일, 다음날) 유지 + 뒤에 1일 추가 지정 (총 4일)
     const sPrev = new Date(seollal); sPrev.setDate(seollal.getDate() - 1);
     const sNext1 = new Date(seollal); sNext1.setDate(seollal.getDate() + 1);
     const sNext2 = new Date(seollal); sNext2.setDate(seollal.getDate() + 2);
@@ -460,7 +460,6 @@
     holidays[formatDate(sNext1)] = '설날 연휴';
     holidays[formatDate(sNext2)] = '설날 연휴';
 
-    // 추석 연휴 (당일 전날, 당일, 당일 다음날, 당일 다다음날 총 4일)
     const cPrev = new Date(chuseok); cPrev.setDate(chuseok.getDate() - 1);
     const cNext1 = new Date(chuseok); cNext1.setDate(chuseok.getDate() + 1);
     const cNext2 = new Date(chuseok); cNext2.setDate(chuseok.getDate() + 2);
@@ -469,23 +468,26 @@
     holidays[formatDate(cNext1)] = '추석 연휴';
     holidays[formatDate(cNext2)] = '추석 연휴';
 
+    // 주말(토/일)과 공휴일이 겹칠 시 대체휴일 계산
     const substituteHolidays = {};
     for (const [dateStr, name] of Object.entries(holidays)) {
-      const d = parseSafeDate(dateStr);
-      const day = d.getDay();
+      if (name === '신정' || name === '현충일') continue;
 
-      if (name !== '신정' && name !== '현충일') {
-        if (day === 0) {
-          const subDate = new Date(d);
-          subDate.setDate(d.getDate() + 1);
-          const subKey = formatDate(subDate);
-          if (!holidays[subKey]) substituteHolidays[subKey] = '대체공휴일';
-        } else if (day === 6 && (name === '어린이날' || name.includes('설날') || name.includes('추석'))) {
-          const subDate = new Date(d);
-          subDate.setDate(d.getDate() + 2);
-          const subKey = formatDate(subDate);
-          if (!holidays[subKey]) substituteHolidays[subKey] = '대체공휴일';
+      const d = parseSafeDate(dateStr);
+      const day = d.getDay(); // 0: 일요일, 6: 토요일
+
+      if (day === 0 || day === 6) {
+        let subDate = new Date(d);
+        // 토요일이면 +2일(월요일), 일요일이면 +1일(월요일)부터 탐색 시작
+        const daysToAdd = (day === 6) ? 2 : 1;
+        subDate.setDate(d.getDate() + daysToAdd);
+
+        // 월요일(또는 그 이후)이 이미 공휴일/연휴인 경우 다음 평일로 이동
+        while (holidays[formatDate(subDate)] || substituteHolidays[formatDate(subDate)]) {
+          subDate.setDate(subDate.getDate() + 1);
         }
+
+        substituteHolidays[formatDate(subDate)] = '대체휴일';
       }
     }
 
