@@ -448,7 +448,7 @@
       padding: 2px 6px;
     }
 
-    /* 4열 x 3행의 월 선택 그리드 */
+    /* 3열 x 4행의 월 선택 그리드 */
     .ios-month-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1071,12 +1071,10 @@
       cell.className = 'ios-month-cell';
       cell.innerText = `${m + 1}월`;
 
-      // 현재 선택된 월 표시
       if (pickerYear === currentDate.getFullYear() && m === selectedPickerMonth) {
         cell.classList.add('selected');
       }
 
-      // 오늘 날짜가 속한 년/월 표시
       if (pickerYear === today.getFullYear() && m === today.getMonth() && !cell.classList.contains('selected')) {
         cell.classList.add('today-text');
       }
