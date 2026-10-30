@@ -53,17 +53,15 @@
       color: #1a1a1a;
     }
 
-    /* 설정 영역 (원래 배치 복구) */
+    /* 설정 영역 (내 조 선택만 우측 정렬 배치) */
     .config-panel {
       background: #f8f9fa;
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 12px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-end;
     }
 
     .config-group {
@@ -73,7 +71,7 @@
       font-size: 0.85rem;
     }
 
-    select, input {
+    select {
       padding: 5px 8px;
       border: 1px solid #ccc;
       border-radius: 6px;
@@ -99,7 +97,7 @@
       font-size: 0.85rem;
     }
 
-    /* 원래 제목 스타일로 복구 (클릭 시 팝업 열림) */
+    /* 클릭 가능한 달력 제목 (캘린더 아이콘 포함) */
     .calendar-header h2 {
       font-size: 1.15rem;
       font-weight: bold;
@@ -108,6 +106,9 @@
       border-radius: 6px;
       transition: background-color 0.2s;
       user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .calendar-header h2:hover {
@@ -448,8 +449,7 @@
       body { padding: 4px; }
       .container { padding: 6px; border-radius: 8px; }
       h1 { font-size: 1.05rem; margin-bottom: 6px; }
-      .config-panel { padding: 6px; gap: 4px; flex-direction: column; align-items: stretch; }
-      .config-group { justify-content: space-between; }
+      .config-panel { padding: 6px; }
       .calendar-grid { gap: 2px; }
       .cell { height: 74px; padding: 1px 2px; }
       .date-label { font-size: 0.8rem; }
@@ -473,11 +473,6 @@
         <option value="3">3조</option>
         <option value="4">4조</option>
       </select>
-    </div>
-
-    <div class="config-group">
-      <label for="baseDate"><b>달력 이동 (기준일):</b></label>
-      <input type="date" id="baseDate" onchange="onBaseDateChange()">
     </div>
   </div>
 
@@ -574,15 +569,6 @@
 
   function changeMonth(delta) {
     currentDate.setMonth(currentDate.getMonth() + delta);
-    renderCalendar();
-  }
-
-  function onBaseDateChange() {
-    const val = document.getElementById('baseDate').value;
-    const baseDateInput = parseSafeDate(val);
-    if (!isNaN(baseDateInput.getTime())) {
-      currentDate = new Date(baseDateInput.getFullYear(), baseDateInput.getMonth(), 1);
-    }
     renderCalendar();
   }
 
@@ -687,14 +673,8 @@
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    // 메인 달력 제목 원래의 깔끔한 텍스트 형태로 복구
-    document.getElementById('monthTitle').innerText = `${year}년 ${month + 1}월`;
-
-    // 상단 기준일 입력값 동기화
-    const baseInput = document.getElementById('baseDate');
-    if (baseInput) {
-      baseInput.value = formatDate(currentDate);
-    }
+    // 메인 달력 제목에 캘린더 아이콘(📅) 추가
+    document.getElementById('monthTitle').innerText = `${year}년 ${month + 1}월 📅`;
 
     const grid = document.getElementById('calendarGrid');
     
@@ -936,8 +916,7 @@
   }
 
   function initApp() {
-    document.getElementById('baseDate').value = formatDate(today);
-    onBaseDateChange();
+    renderCalendar();
     initSwipeEvents();
   }
 
