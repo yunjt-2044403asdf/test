@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>4조 3교대 달력</title>
   
-  <!-- PWA 연동 메타 태그 -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#4A90E2">
@@ -15,17 +14,16 @@
 
   <style>
     :root {
-      --bg-color: #f4f6f9;       /* 소프트 블루 그레이 배경 */
-      --card-bg: #ffffff;         /* 순백색 메인 카드 배경 */
+      --bg-color: #f4f6f9;       
+      --card-bg: #ffffff;         
       --text-color: #333333;
-      --primary-color: #4A90E2;   /* 블루 포인트 색상 */
-      --holiday-color: #d9534f;   /* 빨간색 (공휴일) */
+      --primary-color: #4A90E2;   
+      --holiday-color: #d9534f;   
       
-      /* 근무 상태 색상 */
-      --shift-a-color: #e3f2fd;   /* A조 - 연한 파랑 */
-      --shift-b-color: #fff8e1;   /* B조 - 연한 노랑 */
-      --shift-c-color: #e8f5e9;   /* C조 - 연한 초록 */
-      --off-color: #ffebee;       /* 휴무 - 연한 분홍/빨강 */
+      --shift-a-color: #e3f2fd;   
+      --shift-b-color: #fff8e1;   
+      --shift-c-color: #e8f5e9;   
+      --off-color: #ffebee;       
     }
 
     * {
@@ -33,6 +31,7 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
     }
 
     body {
@@ -103,6 +102,7 @@
       cursor: pointer;
       font-weight: bold;
       font-size: 0.85rem;
+      user-select: none;
     }
 
     .calendar-header h2 {
@@ -186,20 +186,6 @@
       font-weight: 700;
       color: var(--holiday-color);
       background: #fde8e8;
-      padding: 1px 3px;
-      border-radius: 3px;
-      max-width: 60%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: inline-block;
-    }
-
-    .memo-holiday-name {
-      font-size: 0.52rem;
-      font-weight: 700;
-      color: #555555;
-      background: #f1f3f5;
       padding: 1px 3px;
       border-radius: 3px;
       max-width: 60%;
@@ -408,7 +394,6 @@
       cursor: pointer;
     }
 
-    /* 월 선택 전용 모달 카드 스타일 */
     .ios-modal-card {
       background: rgba(38, 38, 42, 0.95);
       color: #ffffff;
@@ -418,6 +403,7 @@
       padding: 20px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       border: 1px solid rgba(255, 255, 255, 0.12);
+      user-select: none;
     }
 
     .ios-picker-header {
@@ -448,7 +434,6 @@
       padding: 2px 6px;
     }
 
-    /* 3열 x 4행의 월 선택 그리드 */
     .ios-month-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -505,30 +490,11 @@
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      width: 100%;
     }
 
     .ios-btn-today:active {
       background: #636366;
-    }
-
-    .ios-btn-confirm {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: #0a84ff;
-      color: #ffffff;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(10, 132, 255, 0.4);
-    }
-
-    .ios-btn-confirm:active {
-      transform: scale(0.95);
     }
 
     @media (max-width: 600px) {
@@ -540,7 +506,6 @@
       .cell { height: 74px; padding: 1px 2px; }
       .date-label { font-size: 0.8rem; }
       .holiday-name { font-size: 0.48rem; padding: 0 2px; }
-      .memo-holiday-name { font-size: 0.48rem; padding: 0 2px; }
       .shift-tag { font-size: 0.58rem; padding: 0 2px; margin-top: 1px; height: 13px; }
       .big-shift-container { font-size: 0.95rem; margin-top: 2px; }
       .cell-memo-badge { font-size: 0.52rem; padding: 0 2px; }
@@ -614,14 +579,13 @@
       </div>
     </div>
 
-    <!-- 1~12월 선택 그리드 (일별 날짜 전면 제거됨) -->
+    <!-- 1~12월 선택 그리드 -->
     <div class="ios-month-grid" id="pickerMonthGrid">
       <!-- 동적 생성 -->
     </div>
 
     <div class="ios-picker-footer">
       <button class="ios-btn-today" onclick="selectPickerToday()">이번 달</button>
-      <button class="ios-btn-confirm" onclick="confirmPickerSelection()">✓</button>
     </div>
   </div>
 </div>
@@ -631,7 +595,6 @@
   let today = new Date();
 
   let pickerYear = new Date().getFullYear();
-  let selectedPickerMonth = new Date().getMonth(); // 0 ~ 11
   let activeModalDateStr = '';
 
   function parseSafeDate(dateStr) {
@@ -743,9 +706,9 @@
 
   function getHolidays(year) {
     const list = {};
-    const add = (d, name, subType = 'none', textOnly = false) => {
+    const add = (d, name, subType = 'none') => {
       const key = typeof d === 'string' ? d : formatDate(d);
-      (list[key] = list[key] || []).push({ name, subType, textOnly });
+      (list[key] = list[key] || []).push({ name, subType });
     };
     const shift = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 
@@ -768,15 +731,11 @@
       const sDay = lunar.seol;
       const sNext1 = shift(lunar.seol, 1);
       const sNext2 = shift(lunar.seol, 2);
-      const sNext3 = shift(lunar.seol, 3);
 
       add(sPrev, '설날 연휴', 'lunar');
       add(sDay, '설날', 'lunar');
       add(sNext1, '설날 연휴', 'lunar');
-      if (sNext2.getDay() === 2) {
-        add(sNext2, '설날 연휴', 'lunar');
-      }
-      add(sNext3, '설날 연휴', 'none', true);
+      add(sNext2, '설날 연휴', 'lunar');
     }
 
     if (lunar.buddha) add(lunar.buddha, '부처님오신날', 'weekend');
@@ -786,15 +745,11 @@
       const cDay = lunar.chuseok;
       const cNext1 = shift(lunar.chuseok, 1);
       const cNext2 = shift(lunar.chuseok, 2);
-      const cNext3 = shift(lunar.chuseok, 3);
 
       add(cPrev, '추석 연휴', 'lunar');
       add(cDay, '추석', 'lunar');
       add(cNext1, '추석 연휴', 'lunar');
-      if (cNext2.getDay() === 2) {
-        add(cNext2, '추석 연휴', 'lunar');
-      }
-      add(cNext3, '추석 연휴', 'none', true);
+      add(cNext2, '추석 연휴', 'lunar');
     }
 
     for (const [k, name] of Object.entries(EXTRA_HOLIDAYS)) {
@@ -802,24 +757,16 @@
     }
 
     const holidayResult = {};
-    const textOnlyResult = {};
 
     for (const [k, arr] of Object.entries(list)) {
-      const realHolidays = arr.filter(e => !e.textOnly);
-      const textHolidays = arr.filter(e => e.textOnly);
-
-      if (realHolidays.length > 0) {
-        holidayResult[k] = [...new Set(realHolidays.map(e => e.name))].join(' / ');
-      }
-      if (textHolidays.length > 0) {
-        textOnlyResult[k] = [...new Set(textHolidays.map(e => e.name))].join(' / ');
+      if (arr.length > 0) {
+        holidayResult[k] = [...new Set(arr.map(e => e.name))].join(' / ');
       }
     }
 
     const subs = {};
     for (const [k, arr] of Object.entries(list)) {
       for (const item of arr) {
-        if (item.textOnly) continue;
         const d = parseSafeDate(k);
         const dow = d.getDay();
         const isWeekend = (dow === 0 || dow === 6);
@@ -829,7 +776,7 @@
           needsSub = true;
         }
         else if (item.subType === 'lunar') {
-          const overlap = list[k].filter(e => !e.textOnly).length > 1;
+          const overlap = list[k].length > 1;
           if (dow === 0 || overlap) {
             needsSub = true;
           }
@@ -873,7 +820,7 @@
       delete finalHolidays['2028-10-06'];
     }
 
-    return { holidays: finalHolidays, textOnly: textOnlyResult };
+    return finalHolidays;
   }
 
   function renderCalendar() {
@@ -894,9 +841,7 @@
     const lastDate = new Date(year, month + 1, 0).getDate();
     const myTeam = parseInt(document.getElementById('myTeam').value, 10);
 
-    const holidayData = getHolidays(year);
-    const currentHolidays = holidayData.holidays;
-    const currentTextOnly = holidayData.textOnly;
+    const currentHolidays = getHolidays(year);
 
     for (let i = 0; i < firstDay; i++) {
       const emptyCell = document.createElement('div');
@@ -914,7 +859,6 @@
       const dateString = formatDate(thisDate);
       const isHoliday = !!currentHolidays[dateString];
       const holidayName = currentHolidays[dateString] || '';
-      const textOnlyName = currentTextOnly[dateString] || '';
 
       if (isHoliday) {
         cell.classList.add('holiday');
@@ -933,13 +877,8 @@
       
       let dateHtml = `<span class="date-label">${date}</span>`;
       
-      if (isHoliday && textOnlyName) {
-        const combinedName = `${holidayName} / ${textOnlyName}`;
-        dateHtml += `<span class="holiday-name" title="${combinedName}">${combinedName}</span>`;
-      } else if (isHoliday) {
+      if (isHoliday) {
         dateHtml += `<span class="holiday-name" title="${holidayName}">${holidayName}</span>`;
-      } else if (textOnlyName) {
-        dateHtml += `<span class="memo-holiday-name" title="${textOnlyName}">${textOnlyName}</span>`;
       }
 
       dateEl.innerHTML = dateHtml;
@@ -982,9 +921,8 @@
         cell.appendChild(memoBadge);
       }
 
-      const displayHolidayInfo = isHoliday && textOnlyName ? `${holidayName} / ${textOnlyName}` : (holidayName || textOnlyName);
       cell.addEventListener('click', () => {
-        openDetailModal(`${year}년 ${month + 1}월 ${date}일`, dateString, displayHolidayInfo, shiftsForDay, myTeam);
+        openDetailModal(`${year}년 ${month + 1}월 ${date}일`, dateString, holidayName, shiftsForDay, myTeam);
       });
 
       grid.appendChild(cell);
@@ -1051,7 +989,6 @@
   /* ===== 월 선택 전용 팝업 관련 함수 ===== */
   function openMonthPickerModal() {
     pickerYear = currentDate.getFullYear();
-    selectedPickerMonth = currentDate.getMonth();
     renderPickerMonths();
     document.getElementById('monthPickerModal').style.display = 'flex';
   }
@@ -1071,17 +1008,20 @@
       cell.className = 'ios-month-cell';
       cell.innerText = `${m + 1}월`;
 
-      if (pickerYear === currentDate.getFullYear() && m === selectedPickerMonth) {
+      if (pickerYear === currentDate.getFullYear() && m === currentDate.getMonth()) {
         cell.classList.add('selected');
       }
 
-      if (pickerYear === today.getFullYear() && m === today.getMonth() && !cell.classList.contains('selected')) {
+      if (pickerYear === today.getFullYear() && m === today.getMonth() && !(pickerYear === currentDate.getFullYear() && m === currentDate.getMonth())) {
         cell.classList.add('today-text');
       }
 
       cell.addEventListener('click', () => {
-        selectedPickerMonth = m;
-        renderPickerMonths();
+        currentDate = new Date(pickerYear, m, 1);
+        sessionStorage.setItem('currentYear', currentDate.getFullYear());
+        sessionStorage.setItem('currentMonth', currentDate.getMonth());
+        renderCalendar();
+        closeModal('monthPickerModal');
       });
 
       grid.appendChild(cell);
@@ -1090,16 +1030,7 @@
 
   function selectPickerToday() {
     pickerYear = today.getFullYear();
-    selectedPickerMonth = today.getMonth();
     currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
-    sessionStorage.setItem('currentYear', currentDate.getFullYear());
-    sessionStorage.setItem('currentMonth', currentDate.getMonth());
-    renderCalendar();
-    closeModal('monthPickerModal');
-  }
-
-  function confirmPickerSelection() {
-    currentDate = new Date(pickerYear, selectedPickerMonth, 1);
     sessionStorage.setItem('currentYear', currentDate.getFullYear());
     sessionStorage.setItem('currentMonth', currentDate.getMonth());
     renderCalendar();
