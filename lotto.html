@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로또 6/45 번호 추출기 & 분석기</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* 3D Ball Styling - Mobile Responsive Sizes */
+        .lotto-ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            line-height: 1;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            box-shadow: inset -3px -3px 6px rgba(0, 0, 0, 0.4), 
+                        inset 3px 3px 6px rgba(255, 255, 255, 0.5),
+                        0 4px 8px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        @media (min-width: 640px) {
+            .lotto-ball {
+                width: 46px;
+                height: 46px;
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Highlight overlay */
+        .lotto-ball::after {
+            content: '';
+            position: absolute;
+            top: 6%;
+            left: 15%;
+            width: 45%;
+            height: 35%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0));
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Text element inside ball */
+        .ball-text {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Ball Colors & High Contrast Text Rules */
+        .ball-yellow { 
+            background: radial-gradient(circle at 35% 35%, #fdd835, #f57f17); 
+            color: #111111; 
+            text-shadow: none;
+        }
+        .ball-blue   { 
+            background: radial-gradient(circle at 35% 35%, #29b6f6, #0277bd); 
+            color: #ffffff; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+        .ball-red    { 
+            background: radial-gradient(circle at 35% 35%, #ef5350, #c62828); 
+            color: #ffffff; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+        .ball-gray   { 
+            background: radial-gradient(circle at 35% 35%, #8d6e63, #4e342e); 
+            color: #ffffff; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+        }
+        .ball-green  { 
+            background: radial-gradient(circle at 35% 35%, #66bb6a, #2e7d32); 
+            color: #ffffff; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+
+        .ball-mini {
+            width: 30px;
+            height: 30px;
+            font-size: 0.85rem;
+            box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.3), 
+                        inset 2px 2px 4px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Absolutely NO Scrollbar on Mobile */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari, Opera */
+        }
+
+        /* Ball rolling animation */
+        @keyframes rollIn {
+            0% {
+                transform: translateY(-60px) rotate(-360deg) scale(0.2);
+                opacity: 0;
+            }
+            70% {
+                transform: translateY(6px) rotate(15deg) scale(1.12);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .animate-roll {
+            animation: rollIn 0.5초 cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 1 !important;
+        }
+
+        /* Grid number button touch target size */
+        .num-grid-btn {
+            min-height: 40px;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-24 sm:pb-12 selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- Toast Alert (Mobile-friendly Top Bar) -->
+    <div id="toast" class="fixed top-3 left-3 right-3 sm:left-auto sm:right-5 sm:w-80 z-50 transform translate-y-[-100px] opacity-0 transition-all duration-300 bg-slate-900/95 text-emerald-400 border border-emerald-500/30 px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 pointer-events-none backdrop-blur-md">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-lg shrink-0"></i>
+        <span id="toastMsg" class="font-medium text-xs sm:text-sm truncate">복사되었습니다!</span>
+    </div>
+
+    <!-- Header -->
+    <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20 shrink-0">
+                    <i class="fa-solid fa-clover text-slate-950 text-lg sm:text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-xl font-bold bg-gradient-to-r from-white via-slate-100 to-amber-300 bg-clip-text text-transparent">로또 번호 추천기</h1>
+                    <p class="text-[10px] sm:text-xs text-slate-400">당첨 통계 & 모바일 추출기</p>
+                </div>
+            </div>
+            <span class="inline-flex items-center px-2 py-1 sm:px-2.5 sm:py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 animate-pulse"></span>
+                통계 모드
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-3 sm:px-4 mt-4 sm:mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+
+        <!-- Left Controls Column -->
+        <section class="lg:col-span-5 space-y-4 sm:space-y-6">
+
+            <!-- Pool Selector Card -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm sm:text-base font-bold text-slate-100 flex items-center">
+                        <i class="fa-solid fa-layer-group text-amber-400 mr-2"></i>추천 번호 그룹
+                    </h2>
+                    <button id="resetPoolBtn" class="text-xs text-slate-400 hover:text-amber-400 transition py-1 px-2 rounded-lg bg-slate-800/50">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>초기화
+                    </button>
+                </div>
+
+                <!-- Presets Grid for Mobile (2x2) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                    <button data-pool="specific-160" class="pool-btn text-left p-2.5 sm:p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 transition flex flex-col justify-between active:scale-[0.98]">
+                        <div class="font-bold text-xs sm:text-sm text-amber-300 flex items-center">
+                            🔥 160~169회 구간
+                        </div>
+                        <div class="text-[11px] text-slate-400 mt-1 truncate">13개 번호 (4, 6, 10, 11...)</div>
+                    </button>
+
+                    <button data-pool="freq-150-180" class="pool-btn text-left p-2.5 sm:p-3 rounded-xl border border-slate-800 bg-slate-800/50 hover:bg-slate-800 transition flex flex-col justify-between active:scale-[0.98]">
+                        <div class="font-bold text-xs sm:text-sm text-slate-200">📊 150~180회 전체</div>
+                        <div class="text-[11px] text-slate-400 mt-1">중심 구간 (38개 번호)</div>
+                    </button>
+
+                    <button data-pool="hot-10" class="pool-btn text-left p-2.5 sm:p-3 rounded-xl border border-slate-800 bg-slate-800/50 hover:bg-slate-800 transition flex flex-col justify-between active:scale-[0.98]">
+                        <div class="font-bold text-xs sm:text-sm text-slate-200">⭐ 최다 출현 TOP 10</div>
+                        <div class="text-[11px] text-slate-400 mt-1">34, 13, 27, 18, 12...</div>
+                    </button>
+
+                    <button data-pool="all" class="pool-btn text-left p-2.5 sm:p-3 rounded-xl border border-slate-800 bg-slate-800/50 hover:bg-slate-800 transition flex flex-col justify-between active:scale-[0.98]">
+                        <div class="font-bold text-xs sm:text-sm text-slate-200">🎲 전체 번호 (1~45)</div>
+                        <div class="text-[11px] text-slate-400 mt-1">기본 로또 무작위</div>
+                    </button>
+                </div>
+
+                <!-- Number Grid Toggle -->
+                <div class="border-t border-slate-800/80 pt-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-semibold text-slate-300">
+                            선택된 번호 (<span id="selectedCount" class="text-amber-400 font-bold">13</span>/45개)
+                        </span>
+                        <div class="space-x-1">
+                            <button id="selectAllBtn" class="px-2 py-1 rounded-md bg-slate-800 text-[11px] text-slate-300 hover:bg-slate-700">전체선택</button>
+                            <button id="deselectAllBtn" class="px-2 py-1 rounded-md bg-slate-800 text-[11px] text-slate-300 hover:bg-slate-700">최소선택</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Mobile Optimized 7-Column Grid (1-45 Grid) -->
+                    <div id="numberGrid" class="grid grid-cols-7 gap-1.5 p-2 bg-slate-950/80 rounded-xl border border-slate-800 max-h-56 overflow-y-auto no-scrollbar">
+                        <!-- JS generated -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Options Card -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-sm space-y-3.5">
+                <h2 class="text-sm sm:text-base font-bold text-slate-100 flex items-center">
+                    <i class="fa-solid fa-sliders text-cyan-400 mr-2"></i>필터 및 추출 조건
+                </h2>
+
+                <!-- Game Count Slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1 text-xs sm:text-sm">
+                        <label for="gameCount" class="text-slate-300 font-medium">생성 게임 수</label>
+                        <span id="gameCountVal" class="text-amber-400 font-bold text-sm sm:text-base">5 게임</span>
+                    </div>
+                    <input type="range" id="gameCount" min="1" max="10" value="5" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                </div>
+
+                <!-- Filter Rules -->
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1">홀짝 비율</label>
+                        <select id="oddEvenFilter" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg p-1.5 text-slate-200 focus:outline-none focus:border-amber-500">
+                            <option value="any">무관 (랜덤)</option>
+                            <option value="3:3">3 : 3 (추천)</option>
+                            <option value="2:4">2:4 또는 4:2</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1">총합 범위</label>
+                        <select id="sumFilter" class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg p-1.5 text-slate-200 focus:outline-none focus:border-amber-500">
+                            <option value="any">무관</option>
+                            <option value="100-170" selected>100 ~ 170 (다빈도)</option>
+                            <option value="120-160">120 ~ 160 (안정)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Consecutive Numbers Filter -->
+                <div class="flex items-center justify-between bg-slate-950/60 p-2.5 rounded-xl border border-slate-800">
+                    <div>
+                        <div class="text-xs font-semibold text-slate-300">연속 번호 제한</div>
+                        <div class="text-[10px] text-slate-400">3연속 이상 번호 제외 (1,2,3 등)</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" id="preventConsecutive" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                </div>
+
+                <!-- Desktop Generate Button -->
+                <button id="generateBtn" class="hidden sm:flex w-full py-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-extrabold text-base rounded-xl shadow-lg shadow-orange-500/20 active:scale-[0.98] transition-all items-center justify-center space-x-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>로또 번호 추출하기</span>
+                </button>
+            </div>
+
+        </section>
+
+        <!-- Right Output Column -->
+        <section class="lg:col-span-7 space-y-4 sm:space-y-6">
+
+            <!-- Result Cards Header & Action -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-sm min-h-[380px] flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-list-check text-amber-400 text-base sm:text-lg"></i>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-100">추출 결과</h2>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <button id="copyAllBtn" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-lg border border-slate-700 transition flex items-center space-x-1">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>전체 복사</span>
+                            </button>
+                            <button id="clearResultsBtn" class="px-2.5 py-1.5 bg-slate-800 hover:bg-red-500/20 text-xs font-semibold text-slate-400 hover:text-red-300 rounded-lg border border-slate-700 hover:border-red-500/30 transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Games List Output -->
+                    <div id="gamesContainer" class="mt-3 space-y-2.5">
+                        <div id="emptyState" class="py-16 text-center text-slate-500 space-y-3">
+                            <div class="w-14 h-14 mx-auto rounded-full bg-slate-800/60 flex items-center justify-center text-slate-500 text-xl border border-slate-800">
+                                <i class="fa-solid fa-dice"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm">원하는 조건 설정 후 하단 <br><strong class="text-amber-400">[번호 추출하기]</strong> 버튼을 누르세요.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
+                    <span class="flex items-center">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                        독립시행 확률 기반
+                    </span>
+                    <span>1-10 🟡 | 11-20 🔵 | 21-30 🔴 | 31-40 ⚪ | 41-45 🟢</span>
+                </div>
+            </div>
+
+            <!-- Saved Favorites Log Card -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl backdrop-blur-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm sm:text-base font-bold text-slate-100 flex items-center">
+                        <i class="fa-solid fa-bookmark text-amber-400 mr-2"></i>보관함 (저장된 조합)
+                    </h3>
+                    <button id="clearSavedBtn" class="text-xs text-slate-500 hover:text-red-400 transition">비우기</button>
+                </div>
+                
+                <div id="savedContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1 no-scrollbar">
+                    <p id="emptySavedState" class="text-xs text-slate-500 text-center py-6">저장된 번호가 없습니다. (추출 결과 우측 ★ 아이콘 클릭)</p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Mobile Sticky Bottom Action Bar -->
+    <div class="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-slate-900/95 border-t border-slate-800 backdrop-blur-lg z-50">
+        <button id="mobileGenerateBtn" class="w-full py-3.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 active:scale-[0.98] text-slate-950 font-extrabold text-base rounded-xl shadow-lg shadow-orange-500/25 flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>로또 번호 추출하기</span>
+        </button>
+    </div>
+
+    <script>
+        // --- CONSTANTS & DATA ---
+        const PRESETS = {
+            'specific-160': [4, 6, 10, 11, 21, 24, 26, 35, 36, 39, 42, 43, 44],
+            'freq-150-180': [
+                2, 4, 5, 6, 8, 10, 11, 14, 15, 16, 17, 19, 20, 21, 23, 24, 25, 26, 28, 29, 30, 31, 33, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45
+            ],
+            'hot-10': [34, 13, 27, 18, 12, 45, 33, 38, 37, 40],
+            'all': Array.from({length: 45}, (_, i) => i + 1)
+        };
+
+        let selectedNumbers = new Set(PRESETS['specific-160']);
+        let generatedGames = [];
+        let savedGames = JSON.parse(localStorage.getItem('lotto_saved_games') || '[]');
+
+        const numberGrid = document.getElementById('numberGrid');
+        const selectedCount = document.getElementById('selectedCount');
+        const gameCountInput = document.getElementById('gameCount');
+        const gameCountVal = document.getElementById('gameCountVal');
+        const generateBtn = document.getElementById('generateBtn');
+        const mobileGenerateBtn = document.getElementById('mobileGenerateBtn');
+        const gamesContainer = document.getElementById('gamesContainer');
+        const emptyState = document.getElementById('emptyState');
+        const copyAllBtn = document.getElementById('copyAllBtn');
+        const clearResultsBtn = document.getElementById('clearResultsBtn');
+        const savedContainer = document.getElementById('savedContainer');
+        const emptySavedState = document.getElementById('emptySavedState');
+
+        function init() {
+            renderGrid();
+            updateSelectedCount();
+            renderSavedGames();
+            setupEventListeners();
+        }
+
+        // Render 1-45 compact mobile 7-column grid
+        function renderGrid() {
+            numberGrid.innerHTML = '';
+            for (let i = 1; i <= 45; i++) {
+                const isSelected = selectedNumbers.has(i);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.num = i;
+                btn.className = `num-grid-btn text-xs font-bold rounded-lg transition-all flex items-center justify-center ${
+                    isSelected 
+                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm shadow-amber-500/30 scale-[1.03]' 
+                    : 'bg-slate-900/90 text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                }`;
+                btn.innerText = i;
+                btn.addEventListener('click', () => toggleNumber(i));
+                numberGrid.appendChild(btn);
+            }
+        }
+
+        function toggleNumber(num) {
+            if (selectedNumbers.has(num)) {
+                if (selectedNumbers.size <= 6) {
+                    showToast('최소 6개 이상의 번호가 선택되어야 합니다.', 'error');
+                    return;
+                }
+                selectedNumbers.delete(num);
+            } else {
+                selectedNumbers.add(num);
+            }
+            renderGrid();
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            selectedCount.innerText = selectedNumbers.size;
+        }
+
+        function getBallColorClass(num) {
+            if (num <= 10) return 'ball-yellow';
+            if (num <= 20) return 'ball-blue';
+            if (num <= 30) return 'ball-red';
+            if (num <= 40) return 'ball-gray';
+            return 'ball-green';
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.pool-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const poolKey = btn.dataset.pool;
+                    selectedNumbers = new Set(PRESETS[poolKey]);
+                    renderGrid();
+                    updateSelectedCount();
+                    showToast('번호 그룹이 설정되었습니다.');
+                });
+            });
+
+            document.getElementById('selectAllBtn').addEventListener('click', () => {
+                selectedNumbers = new Set(PRESETS['all']);
+                renderGrid();
+                updateSelectedCount();
+            });
+
+            document.getElementById('deselectAllBtn').addEventListener('click', () => {
+                selectedNumbers = new Set([4, 6, 10, 11, 21, 24]);
+                renderGrid();
+                updateSelectedCount();
+            });
+
+            document.getElementById('resetPoolBtn').addEventListener('click', () => {
+                selectedNumbers = new Set(PRESETS['all']);
+                renderGrid();
+                updateSelectedCount();
+            });
+
+            gameCountInput.addEventListener('input', (e) => {
+                gameCountVal.innerText = `${e.target.value} 게임`;
+            });
+
+            generateBtn.addEventListener('click', generateLottoNumbers);
+            mobileGenerateBtn.addEventListener('click', () => {
+                generateLottoNumbers();
+                // Scroll up smoothly to results on mobile
+                gamesContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            copyAllBtn.addEventListener('click', copyAllResults);
+            clearResultsBtn.addEventListener('click', () => {
+                generatedGames = [];
+                gamesContainer.innerHTML = '';
+                gamesContainer.appendChild(emptyState);
+            });
+
+            document.getElementById('clearSavedBtn').addEventListener('click', () => {
+                savedGames = [];
+                localStorage.removeItem('lotto_saved_games');
+                renderSavedGames();
+            });
+        }
+
+        function generateLottoNumbers() {
+            const pool = Array.from(selectedNumbers);
+            if (pool.length < 6) {
+                showToast('번호 풀에 최소 6개 이상의 숫자가 필요합니다.', 'error');
+                return;
+            }
+
+            const count = parseInt(gameCountInput.value);
+            const oddEvenFilter = document.getElementById('oddEvenFilter').value;
+            const sumFilter = document.getElementById('sumFilter').value;
+            const preventConsecutive = document.getElementById('preventConsecutive').checked;
+
+            let results = [];
+            let maxAttempts = 1000;
+            let attempts = 0;
+
+            while (results.length < count && attempts < maxAttempts) {
+                attempts++;
+                let candidate = drawRandom6(pool);
+                candidate.sort((a, b) => a - b);
+
+                if (!checkOddEven(candidate, oddEvenFilter)) continue;
+                if (!checkSum(candidate, sumFilter)) continue;
+                if (preventConsecutive && hasThreeConsecutive(candidate)) continue;
+
+                results.push(candidate);
+            }
+
+            if (results.length < count) {
+                showToast('필터 조건이 까다로워 가능한 게임 수만 생성되었습니다.', 'warning');
+            }
+
+            generatedGames = results;
+            renderResultsWithAnimation();
+            
+            confetti({
+                particleCount: 40,
+                spread: 50,
+                origin: { y: 0.85 }
+            });
+        }
+
+        function drawRandom6(pool) {
+            let shuffled = [...pool].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, 6);
+        }
+
+        function checkOddEven(nums, filter) {
+            if (filter === 'any') return true;
+            const odds = nums.filter(n => n % 2 !== 0).length;
+            const evens = 6 - odds;
+
+            if (filter === '3:3') return odds === 3 && evens === 3;
+            if (filter === '2:4') return (odds === 2 && evens === 4) || (odds === 4 && evens === 2);
+            return true;
+        }
+
+        function checkSum(nums, filter) {
+            if (filter === 'any') return true;
+            const sum = nums.reduce((a, b) => a + b, 0);
+            const [min, max] = filter.split('-').map(Number);
+            return sum >= min && sum <= max;
+        }
+
+        function hasThreeConsecutive(nums) {
+            for (let i = 0; i < nums.length - 2; i++) {
+                if (nums[i+1] === nums[i] + 1 && nums[i+2] === nums[i] + 2) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function renderResultsWithAnimation() {
+            gamesContainer.innerHTML = '';
+
+            generatedGames.forEach((game, gameIdx) => {
+                const gameSum = game.reduce((a, b) => a + b, 0);
+                const odds = game.filter(n => n % 2 !== 0).length;
+                const evens = 6 - odds;
+                const gameLabel = String.fromCharCode(65 + gameIdx);
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 sm:p-3.5 flex flex-col justify-between gap-2 transition shadow-md';
+                
+                let ballsHtml = game.map((num, idx) => `
+                    <div class="lotto-ball ${getBallColorClass(num)} animate-roll" style="animation-delay: ${gameIdx * 70 + idx * 60}ms">
+                        <span class="ball-text">${num}</span>
+                    </div>
+                `).join('');
+
+                card.innerHTML = `
+                    <div class="flex items-center space-x-2 w-full overflow-hidden">
+                        <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-xs sm:text-sm flex items-center justify-center shrink-0">
+                            ${gameLabel}
+                        </span>
+                        <div class="no-scrollbar flex items-center space-x-1.5 sm:space-x-2 overflow-x-auto py-1 px-0.5 w-full">
+                            ${ballsHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 pt-1.5 border-t border-slate-800/60">
+                        <div class="space-x-2 font-mono">
+                            <span>합:<strong class="text-slate-200">${gameSum}</strong></span>
+                            <span>홀짝:<strong class="text-slate-200">${odds}:${evens}</strong></span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="saveGame([${game}])" class="px-2 py-1 text-slate-400 hover:text-amber-400 rounded transition flex items-center space-x-1 bg-slate-900">
+                                <i class="fa-regular fa-star text-xs"></i>
+                                <span class="text-[10px]">저장</span>
+                            </button>
+                            <button onclick="copySingleGame([${game}], '${gameLabel}')" class="px-2 py-1 text-slate-400 hover:text-emerald-400 rounded transition flex items-center space-x-1 bg-slate-900">
+                                <i class="fa-regular fa-copy text-xs"></i>
+                                <span class="text-[10px]">복사</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                gamesContainer.appendChild(card);
+            });
+        }
+
+        window.saveGame = function(gameArr) {
+            const gameStr = JSON.stringify(gameArr);
+            if (savedGames.some(g => JSON.stringify(g) === gameStr)) {
+                showToast('이미 보관함에 저장된 조합입니다.', 'warning');
+                return;
+            }
+            savedGames.unshift(gameArr);
+            localStorage.setItem('lotto_saved_games', JSON.stringify(savedGames));
+            renderSavedGames();
+            showToast('보관함에 저장되었습니다!');
+        };
+
+        function renderSavedGames() {
+            if (savedGames.length === 0) {
+                emptySavedState.style.display = 'block';
+                savedContainer.innerHTML = '';
+                savedContainer.appendChild(emptySavedState);
+                return;
+            }
+
+            emptySavedState.style.display = 'none';
+            savedContainer.innerHTML = '';
+
+            savedGames.forEach((game, idx) => {
+                const item = document.createElement('div');
+                item.className = 'bg-slate-950/60 border border-slate-800/80 rounded-lg p-2 flex items-center justify-between';
+                
+                const ballsHtml = game.map(num => `
+                    <div class="lotto-ball ball-mini ${getBallColorClass(num)}">
+                        <span class="ball-text">${num}</span>
+                    </div>
+                `).join('');
+
+                item.innerHTML = `
+                    <div class="no-scrollbar flex items-center space-x-1 overflow-x-auto py-0.5 px-0.5">
+                        ${ballsHtml}
+                    </div>
+                    <button onclick="removeSavedGame(${idx})" class="text-slate-500 hover:text-red-400 p-1.5 text-xs transition shrink-0 ml-1">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                savedContainer.appendChild(item);
+            });
+        }
+
+        window.removeSavedGame = function(index) {
+            savedGames.splice(index, 1);
+            localStorage.setItem('lotto_saved_games', JSON.stringify(savedGames));
+            renderSavedGames();
+        };
+
+        window.copySingleGame = function(gameArr, label) {
+            const text = `${label} 게임: ${gameArr.join(', ')}`;
+            copyToClipboard(text);
+            showToast(`${label} 게임 복사 완료`);
+        };
+
+        function copyAllResults() {
+            if (generatedGames.length === 0) {
+                showToast('복사할 생성 결과가 없습니다.', 'warning');
+                return;
+            }
+
+            let text = '[로또 6/45 추천 번호]\n';
+            generatedGames.forEach((game, idx) => {
+                const label = String.fromCharCode(65 + idx);
+                text += `${label} 게임: ${game.map(n => String(n).padStart(2, '0')).join(', ')}\n`;
+            });
+
+            copyToClipboard(text);
+            showToast('전체 게임 번호가 복사되었습니다!');
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = msg;
+            
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-xmark text-lg text-red-400 shrink-0';
+            } else if (type === 'warning') {
+                toastIcon.className = 'fa-solid fa-triangle-exclamation text-lg text-amber-400 shrink-0';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-lg text-emerald-400 shrink-0';
+            }
+
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+            }, 2300);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
