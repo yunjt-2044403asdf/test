@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>4조 3교대 달력</title>
+  <title>4조 3교대 달력 (구글 캘린더 연동)</title>
   
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -11,6 +11,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="교대달력">
+
+  <!-- 구글 로그인 및 API 라이브러리 로드 -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
 
   <style>
     :root {
@@ -69,8 +73,6 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
     }
 
     .config-group {
@@ -80,33 +82,23 @@
       font-size: 0.85rem;
     }
 
-    .memo-tools {
-      display: flex;
-      gap: 6px;
-    }
-
-    .btn-tool {
-      background: #6c757d;
-      color: white;
-      border: none;
-      padding: 5px 9px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-
-    .btn-tool:hover {
-      background: #5a6268;
-    }
-
     select {
       padding: 5px 8px;
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 0.85rem;
       background-color: #ffffff;
+    }
+
+    .google-login-btn {
+      background: #ffffff;
+      color: #444;
+      border: 1px solid #ccc;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
     }
 
     .calendar-header {
@@ -258,9 +250,7 @@
       white-space: nowrap;
     }
 
-    .team-name {
-      color: #000000;
-    }
+    .team-name { color: #000000; }
 
     .big-shift-container {
       flex: 1;
@@ -331,25 +321,10 @@
       padding-bottom: 8px;
     }
 
-    .modal-title {
-      font-size: 1.05rem;
-      font-weight: bold;
-    }
+    .modal-title { font-size: 1.05rem; font-weight: bold; }
+    .modal-close { background: none; border: none; font-size: 1.2rem; font-weight: bold; color: #888; cursor: pointer; }
 
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #888;
-      cursor: pointer;
-    }
-
-    .modal-body {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .modal-body { display: flex; flex-direction: column; gap: 6px; }
 
     .modal-item {
       display: flex;
@@ -366,27 +341,17 @@
       border-top: 1px solid #eee;
     }
 
-    .memo-header-title {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: #444;
-      margin-bottom: 6px;
-    }
+    .memo-header-title { font-size: 0.88rem; font-weight: 700; color: #444; margin-bottom: 6px; }
 
     #modalMemoInput {
       width: 100%;
-      height: 60px;
+      height: 50px;
       border: 1px solid #ccc;
       border-radius: 8px;
       padding: 8px;
       font-size: 0.85rem;
       resize: none;
       outline: none;
-      transition: border-color 0.2s;
-    }
-
-    #modalMemoInput:focus {
-      border-color: var(--primary-color);
     }
 
     .memo-btn-group {
@@ -396,26 +361,9 @@
       margin-top: 8px;
     }
 
-    .btn-memo-save {
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 0.82rem;
-      cursor: pointer;
-    }
-
-    .btn-memo-delete {
-      background: #f1f3f5;
-      color: #495057;
-      border: 1px solid #ced4da;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      cursor: pointer;
-    }
+    .btn-memo-save { background: var(--primary-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; cursor: pointer; }
+    .btn-memo-delete { background: #f1f3f5; color: #495057; border: 1px solid #ced4da; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+    .btn-gcal-sync { background: #34a853; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; cursor: pointer; width: 100%; margin-top: 10px; }
 
     .ios-modal-card {
       background: rgba(38, 38, 42, 0.95);
@@ -429,96 +377,22 @@
       user-select: none;
     }
 
-    .ios-picker-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
+    .ios-picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .ios-picker-title { font-size: 1.25rem; font-weight: 700; color: #ffffff; }
+    .ios-picker-nav { display: flex; gap: 16px; }
+    .ios-picker-nav button { background: none; border: none; color: #0a84ff; font-size: 1.4rem; font-weight: 600; cursor: pointer; padding: 2px 6px; }
 
-    .ios-picker-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #ffffff;
-    }
-
-    .ios-picker-nav {
-      display: flex;
-      gap: 16px;
-    }
-
-    .ios-picker-nav button {
-      background: none;
-      border: none;
-      color: #0a84ff;
-      font-size: 1.4rem;
-      font-weight: 600;
-      cursor: pointer;
-      padding: 2px 6px;
-    }
-
-    .ios-month-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
+    .ios-month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-bottom: 16px; }
     .ios-month-cell {
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.05rem;
-      font-weight: 600;
-      border-radius: 12px;
-      cursor: pointer;
-      background: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-      user-select: none;
-      transition: background 0.2s;
+      height: 50px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem; font-weight: 600; border-radius: 12px; cursor: pointer;
+      background: rgba(255, 255, 255, 0.08); color: #ffffff; transition: background 0.2s;
     }
+    .ios-month-cell.selected { background-color: #0a84ff !important; font-weight: 800; }
+    .ios-month-cell.today-text { border: 1px solid #0a84ff; color: #0a84ff; }
 
-    .ios-month-cell:active {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    .ios-month-cell.selected {
-      background-color: #0a84ff !important;
-      color: #ffffff !important;
-      font-weight: 800;
-      box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
-    }
-
-    .ios-month-cell.today-text {
-      border: 1px solid #0a84ff;
-      color: #0a84ff;
-    }
-
-    .ios-picker-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 10px;
-    }
-
-    .ios-btn-today {
-      background: #48484a;
-      color: #ffffff;
-      border: none;
-      padding: 8px 18px;
-      border-radius: 18px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      width: 100%;
-    }
-
-    .ios-btn-today:active {
-      background: #636366;
-    }
+    .ios-picker-footer { display: flex; justify-content: center; align-items: center; margin-top: 10px; }
+    .ios-btn-today { background: #48484a; color: #ffffff; border: none; padding: 8px 18px; border-radius: 18px; font-size: 0.9rem; font-weight: 700; cursor: pointer; width: 100%; }
 
     @media (max-width: 600px) {
       body { padding: 4px; }
@@ -532,7 +406,6 @@
       .shift-tag { font-size: 0.58rem; padding: 0 2px; margin-top: 1px; height: 13px; }
       .big-shift-container { font-size: 0.95rem; margin-top: 2px; }
       .cell-memo-badge { font-size: 0.52rem; padding: 0 2px; }
-      .btn-tool { font-size: 0.75rem; padding: 4px 7px; }
     }
   </style>
 </head>
@@ -552,11 +425,8 @@
         <option value="4">4조</option>
       </select>
     </div>
-    <div class="memo-tools">
-      <button class="btn-tool" onclick="exportMemos()">💾 메모 백업</button>
-      <button class="btn-tool" onclick="document.getElementById('importFileInput').click()">📂 메모 불러오기</button>
-      <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importMemos(event)">
-    </div>
+    <!-- 구글 로그인 버튼 -->
+    <button class="google-login-btn" id="googleAuthBtn" onclick="handleAuthClick()">구글 로그인</button>
   </div>
 
   <div class="calendar-header">
@@ -593,6 +463,8 @@
         <button class="btn-memo-delete" onclick="deleteCurrentMemo()">삭제</button>
         <button class="btn-memo-save" onclick="saveCurrentMemo()">저장</button>
       </div>
+      <!-- 구글 캘린더 전송 버튼 -->
+      <button class="btn-gcal-sync" onclick="syncToGoogleCalendar()">📅 구글 캘린더에 일정 등록</button>
     </div>
   </div>
 </div>
@@ -608,10 +480,7 @@
       </div>
     </div>
 
-    <!-- 1~12월 선택 그리드 -->
-    <div class="ios-month-grid" id="pickerMonthGrid">
-      <!-- 동적 생성 -->
-    </div>
+    <div class="ios-month-grid" id="pickerMonthGrid"></div>
 
     <div class="ios-picker-footer">
       <button class="ios-btn-today" onclick="selectPickerToday()">이번 달</button>
@@ -620,10 +489,118 @@
 </div>
 
 <script>
+  // ========= 구글 API 설정 =========
+  const CLIENT_ID = '496174598799-sae1kqjk7tq0c4vf4cees0ad7qhdnsbf.apps.googleusercontent.com'; // 여기에 본인의 클라이언트 ID 입력
+  const SCOPES = 'https://www.googleapis.com/auth/calendar.events';
+  let tokenClient;
+  let gapiInited = false;
+  let gisInited = false;
+
+  function gapiLoaded() {
+    gapi.load('client', initializeGapiClient);
+  }
+
+  async function initializeGapiClient() {
+    await gapi.client.init({
+      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+    });
+    gapiInited = true;
+  }
+
+  function gisLoaded() {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: '', // 나중에 동적으로 처리
+    });
+    gisInited = true;
+  }
+
+  // 페이지 로드 시 구글 스크립트 초기화 함수 호출 바인딩
+  window.onload = function() {
+    setTimeout(gapiLoaded, 500);
+    setTimeout(gisLoaded, 500);
+  };
+
+  function handleAuthClick() {
+    if (!tokenClient) {
+      alert('구글 인증 모듈이 아직 로드되지 않았습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    tokenClient.callback = async (resp) => {
+      if (resp.error !== undefined) {
+        throw (resp);
+      }
+      document.getElementById('googleAuthBtn').innerText = '연동 완료됨(로그인됨)';
+      document.getElementById('googleAuthBtn').style.background = '#e6f4ea';
+      document.getElementById('googleAuthBtn').style.color = '#137333';
+      alert('구글 계정이 성공적으로 연동되었습니다!');
+    };
+
+    if (gapi.client.getToken() === null) {
+      tokenClient.requestAccessToken({prompt: 'consent'});
+    } else {
+      tokenClient.requestAccessToken({prompt: ''});
+    }
+  }
+
+  // 선택한 날짜의 근무 및 메모를 구글 캘린더에 등록하는 함수
+  async function syncToGoogleCalendar() {
+    if (gapi.client.getToken() === null) {
+      alert('먼저 상단의 [구글 로그인] 버튼을 눌러 로그인을 진행해 주세요!');
+      handleAuthClick();
+      return;
+    }
+
+    const myTeam = parseInt(document.getElementById('myTeam').value, 10);
+    if (myTeam === 0) {
+      alert('내 조 선택이 "전체조"로 되어있습니다. 본인 조(1~4조)를 선택한 후 등록해 주세요.');
+      return;
+    }
+
+    const thisDate = parseSafeDate(activeModalDateStr);
+    const diffTime = thisDate.getTime() - FIXED_BASE_DATE.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const baseIdx = teamBaseIndices[myTeam];
+    let teamPatternIdx = (baseIdx + diffDays) % PATTERN_LENGTH;
+    if (teamPatternIdx < 0) teamPatternIdx += PATTERN_LENGTH;
+    const shiftInfo = pattern[teamPatternIdx];
+
+    const memoText = localStorage.getItem('memo_' + activeModalDateStr) || '';
+    const holidayName = document.getElementById('modalHolidayInfo').innerText.replace('★ ', '');
+
+    let summary = `[${myTeam}조] ${shiftInfo.code}`;
+    if (holidayName) summary += ` (${holidayName})`;
+
+    let description = `교대 근무: ${myTeam}조 ${shiftInfo.code}`;
+    if (memoText) description += `\n메모: ${memoText}`;
+
+    const event = {
+      'summary': summary,
+      'description': description,
+      'start': { 'date': activeModalDateStr },
+      'end': { 'date': activeModalDateStr } // 종일 일정
+    };
+
+    try {
+      const request = gapi.client.calendar.events.insert({
+        'calendarId': 'primary',
+        'resource': event,
+      });
+      await request;
+      alert(`[${activeModalDateStr}] 일정이 구글 캘린더에 성공적으로 등록되었습니다!`);
+      closeModal('detailModal');
+    } catch (err) {
+      console.error('구글 캘린더 등록 오류:', err);
+      alert('일정 등록 중 오류가 발생했습니다. 다시 로그인 후 시도해 주세요.');
+    }
+  }
+
+  // ========= 기존 달력 및 모달 로직 =========
   let currentDate = new Date();
   let today = new Date();
-
   let pickerYear = new Date().getFullYear();
+  let selectedPickerMonth = new Date().getMonth();
   let activeModalDateStr = '';
 
   function parseSafeDate(dateStr) {
@@ -649,10 +626,8 @@
   });
 
   const PATTERN_LENGTH = pattern.length;
-
   const FIXED_BASE_DATE = new Date(2026, 9, 29);
   FIXED_BASE_DATE.setHours(0,0,0,0);
-
   const teamBaseIndices = { 1: 1, 2: 7, 3: 13, 4: 19 };
 
   function onTeamChange() {
@@ -676,7 +651,6 @@
     return `${y}-${m}-${date}`;
   }
 
-  /* ===== 명절(음력) 날짜표 ===== */
   const LUNAR_TABLE = {
     2024: ['02-10', '05-15', '09-17'],
     2025: ['01-29', '05-05', '10-06'],
@@ -756,29 +730,19 @@
 
     const lunar = getLunarHolidayDates(year);
     if (lunar.seol) {
-      const sPrev = shift(lunar.seol, -1);
-      const sDay = lunar.seol;
-      const sNext1 = shift(lunar.seol, 1);
-      const sNext2 = shift(lunar.seol, 2);
-
-      add(sPrev, '설날 연휴', 'lunar');
-      add(sDay, '설날', 'lunar');
-      add(sNext1, '설날 연휴', 'lunar');
-      add(sNext2, '설날 연휴', 'lunar');
+      add(shift(lunar.seol, -1), '설날 연휴', 'lunar');
+      add(lunar.seol, '설날', 'lunar');
+      add(shift(lunar.seol, 1), '설날 연휴', 'lunar');
+      add(shift(lunar.seol, 2), '설날 연휴', 'lunar');
     }
 
     if (lunar.buddha) add(lunar.buddha, '부처님오신날', 'weekend');
 
     if (lunar.chuseok) {
-      const cPrev = shift(lunar.chuseok, -1);
-      const cDay = lunar.chuseok;
-      const cNext1 = shift(lunar.chuseok, 1);
-      const cNext2 = shift(lunar.chuseok, 2);
-
-      add(cPrev, '추석 연휴', 'lunar');
-      add(cDay, '추석', 'lunar');
-      add(cNext1, '추석 연휴', 'lunar');
-      add(cNext2, '추석 연휴', 'lunar');
+      add(shift(lunar.chuseok, -1), '추석 연휴', 'lunar');
+      add(lunar.chuseok, '추석', 'lunar');
+      add(shift(lunar.chuseok, 1), '추석 연휴', 'lunar');
+      add(shift(lunar.chuseok, 2), '추석 연휴', 'lunar');
     }
 
     for (const [k, name] of Object.entries(EXTRA_HOLIDAYS)) {
@@ -786,7 +750,6 @@
     }
 
     const holidayResult = {};
-
     for (const [k, arr] of Object.entries(list)) {
       if (arr.length > 0) {
         holidayResult[k] = [...new Set(arr.map(e => e.name))].join(' / ');
@@ -801,15 +764,8 @@
         const isWeekend = (dow === 0 || dow === 6);
 
         let needsSub = false;
-        if (item.subType === 'weekend' && isWeekend) {
-          needsSub = true;
-        }
-        else if (item.subType === 'lunar') {
-          const overlap = list[k].length > 1;
-          if (dow === 0 || overlap) {
-            needsSub = true;
-          }
-        }
+        if (item.subType === 'weekend' && isWeekend) needsSub = true;
+        else if (item.subType === 'lunar' && (dow === 0 || list[k].length > 1)) needsSub = true;
 
         if (needsSub) {
           let cur = shift(d, 1);
@@ -826,28 +782,19 @@
     }
 
     let finalHolidays = {};
-    for (const [k, name] of Object.entries(holidayResult)) {
-      finalHolidays[k] = name;
-    }
+    for (const [k, name] of Object.entries(holidayResult)) finalHolidays[k] = name;
     for (const [k, name] of Object.entries(subs)) {
       if (finalHolidays[k]) {
-        if (!finalHolidays[k].includes(name)) {
-          finalHolidays[k] = `${finalHolidays[k]} / ${name}`;
-        }
+        if (!finalHolidays[k].includes(name)) finalHolidays[k] = `${finalHolidays[k]} / ${name}`;
       } else {
         finalHolidays[k] = name;
       }
     }
 
     for (const [k, name] of Object.entries(finalHolidays)) {
-      if (name.includes('대체공휴일') && parseSafeDate(k).getDay() === 3) {
-        delete finalHolidays[k];
-      }
+      if (name.includes('대체공휴일') && parseSafeDate(k).getDay() === 3) delete finalHolidays[k];
     }
-
-    if (year === 2028) {
-      delete finalHolidays['2028-10-06'];
-    }
+    if (year === 2028) delete finalHolidays['2028-10-06'];
 
     return finalHolidays;
   }
@@ -857,19 +804,14 @@
     const month = currentDate.getMonth();
 
     const svgIcon = `<svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
-    
     document.getElementById('monthTitle').innerHTML = `${year}년 ${month + 1}월 ${svgIcon}`;
 
     const grid = document.getElementById('calendarGrid');
-    
-    while (grid.children.length > 7) {
-      grid.removeChild(grid.lastChild);
-    }
+    while (grid.children.length > 7) grid.removeChild(grid.lastChild);
 
     const firstDay = new Date(year, month, 1).getDay();
     const lastDate = new Date(year, month + 1, 0).getDate();
     const myTeam = parseInt(document.getElementById('myTeam').value, 10);
-
     const currentHolidays = getHolidays(year);
 
     for (let i = 0; i < firstDay; i++) {
@@ -884,47 +826,29 @@
 
       const thisDate = new Date(year, month, date);
       thisDate.setHours(0,0,0,0);
-
       const dateString = formatDate(thisDate);
       const isHoliday = !!currentHolidays[dateString];
       const holidayName = currentHolidays[dateString] || '';
 
-      if (isHoliday) {
-        cell.classList.add('holiday');
-      }
-
-      if (
-        thisDate.getFullYear() === today.getFullYear() &&
-        thisDate.getMonth() === today.getMonth() &&
-        thisDate.getDate() === today.getDate()
-      ) {
-        cell.classList.add('today');
-      }
+      if (isHoliday) cell.classList.add('holiday');
+      if (thisDate.toDateString() === today.toDateString()) cell.classList.add('today');
 
       const dateEl = document.createElement('div');
       dateEl.classList.add('date-num');
-      
       let dateHtml = `<span class="date-label">${date}</span>`;
-      
-      if (isHoliday) {
-        dateHtml += `<span class="holiday-name" title="${holidayName}">${holidayName}</span>`;
-      }
-
+      if (isHoliday) dateHtml += `<span class="holiday-name" title="${holidayName}">${holidayName}</span>`;
       dateEl.innerHTML = dateHtml;
       cell.appendChild(dateEl);
 
       const diffTime = thisDate.getTime() - FIXED_BASE_DATE.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
       const shiftsForDay = [];
 
       for (let team = 1; team <= 4; team++) {
         const baseIdx = teamBaseIndices[team];
         let teamPatternIdx = (baseIdx + diffDays) % PATTERN_LENGTH;
         if (teamPatternIdx < 0) teamPatternIdx += PATTERN_LENGTH;
-
-        const shift = pattern[teamPatternIdx];
-        shiftsForDay.push({ team, shift });
+        shiftsForDay.push({ team, shift: pattern[teamPatternIdx] });
       }
 
       if (myTeam === 0) {
@@ -961,7 +885,6 @@
   function openDetailModal(dateTitle, dateStr, holidayName, shifts, myTeam) {
     activeModalDateStr = dateStr;
     document.getElementById('modalDateTitle').innerText = dateTitle;
-    
     const holiEl = document.getElementById('modalHolidayInfo');
     if (holidayName) {
       holiEl.innerText = `★ ${holidayName}`;
@@ -972,12 +895,10 @@
 
     const listEl = document.getElementById('modalShiftList');
     listEl.innerHTML = '';
-
     shifts.forEach(item => {
       const row = document.createElement('div');
-      if (myTeam === 0) {
-        row.className = `modal-item ${item.shift.class}`;
-      } else if (item.team === myTeam) {
+      if (myTeam === 0) row.className = `modal-item ${item.shift.class}`;
+      else if (item.team === myTeam) {
         row.className = `modal-item ${item.shift.class}`;
         row.style.border = '2px solid var(--primary-color)';
       } else {
@@ -987,90 +908,30 @@
       listEl.appendChild(row);
     });
 
-    const savedMemo = localStorage.getItem('memo_' + dateStr) || '';
-    document.getElementById('modalMemoInput').value = savedMemo;
-
+    document.getElementById('modalMemoInput').value = localStorage.getItem('memo_' + dateStr) || '';
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-  /* ===== 수동 백업 (필요할 때만 내보내기) ===== */
-  function exportMemos() {
-    const memos = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith('memo_')) {
-        memos[key] = localStorage.getItem(key);
-      }
-    }
-    
-    if (Object.keys(memos).length === 0) {
-      alert('백업할 메모가 없습니다.');
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(memos, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `shift_calendar_memos_${formatDate(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  /* ===== 불러오기 (JSON 파일 복원) ===== */
-  function importMemos(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const memos = JSON.parse(e.target.result);
-        let count = 0;
-        Object.keys(memos).forEach(key => {
-          if (key.startsWith('memo_')) {
-            localStorage.setItem(key, memos[key]);
-            count++;
-          }
-        });
-        alert(`${count}개의 메모를 성공적으로 불러왔습니다.`);
-        renderCalendar();
-      } catch (err) {
-        alert('올바른 백업 파일(JSON)이 아닙니다.');
-      }
-      event.target.value = '';
-    };
-    reader.readAsText(file);
-  }
-
-  /* ===== 메모 저장 (단일 내장 공간에 덮어쓰기 저장, 파일 다운로드 X) ===== */
   function saveCurrentMemo() {
     if (!activeModalDateStr) return;
     const memoText = document.getElementById('modalMemoInput').value.trim();
-    
-    if (memoText) {
-      localStorage.setItem('memo_' + activeModalDateStr, memoText);
-    } else {
-      localStorage.removeItem('memo_' + activeModalDateStr);
-    }
-    
+    if (memoText) localStorage.setItem('memo_' + activeModalDateStr, memoText);
+    else localStorage.removeItem('memo_' + activeModalDateStr);
     renderCalendar();
     closeModal('detailModal');
   }
 
   function deleteCurrentMemo() {
     if (!activeModalDateStr) return;
-    
-    if (confirm("정말 이 메모를 삭제하시겠습니까?")) {
-      localStorage.removeItem('memo_' + activeModalDateStr);
-      document.getElementById('modalMemoInput').value = '';
-      renderCalendar();
-      closeModal('detailModal');
-    }
+    localStorage.removeItem('memo_' + activeModalDateStr);
+    document.getElementById('modalMemoInput').value = '';
+    renderCalendar();
+    closeModal('detailModal');
   }
 
-  /* ===== 월 선택 전용 팝업 관련 함수 ===== */
   function openMonthPickerModal() {
     pickerYear = currentDate.getFullYear();
+    selectedPickerMonth = currentDate.getMonth();
     renderPickerMonths();
     document.getElementById('monthPickerModal').style.display = 'flex';
   }
@@ -1089,29 +950,25 @@
       const cell = document.createElement('div');
       cell.className = 'ios-month-cell';
       cell.innerText = `${m + 1}월`;
-
-      if (pickerYear === currentDate.getFullYear() && m === currentDate.getMonth()) {
-        cell.classList.add('selected');
-      }
-
-      if (pickerYear === today.getFullYear() && m === today.getMonth() && !(pickerYear === currentDate.getFullYear() && m === currentDate.getMonth())) {
-        cell.classList.add('today-text');
-      }
+      if (pickerYear === currentDate.getFullYear() && m === selectedPickerMonth) cell.classList.add('selected');
+      if (pickerYear === today.getFullYear() && m === today.getMonth() && !cell.classList.contains('selected')) cell.classList.add('today-text');
 
       cell.addEventListener('click', () => {
-        currentDate = new Date(pickerYear, m, 1);
+        selectedPickerMonth = m;
+        renderPickerMonths();
+        currentDate = new Date(pickerYear, selectedPickerMonth, 1);
         sessionStorage.setItem('currentYear', currentDate.getFullYear());
         sessionStorage.setItem('currentMonth', currentDate.getMonth());
         renderCalendar();
         closeModal('monthPickerModal');
       });
-
       grid.appendChild(cell);
     }
   }
 
   function selectPickerToday() {
     pickerYear = today.getFullYear();
+    selectedPickerMonth = today.getMonth();
     currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
     sessionStorage.setItem('currentYear', currentDate.getFullYear());
     sessionStorage.setItem('currentMonth', currentDate.getMonth());
@@ -1124,70 +981,22 @@
     document.getElementById(modalId).style.display = 'none';
   }
 
-  function initSwipeEvents() {
-    const container = document.getElementById('calendarContainer');
-    let touchstartX = 0;
-    let touchstartY = 0;
-    let touchendX = 0;
-    let touchendY = 0;
-
-    container.addEventListener('touchstart', function(e) {
-      touchstartX = e.changedTouches[0].screenX;
-      touchstartY = e.changedTouches[0].screenY;
-    }, { passive: true });
-
-    container.addEventListener('touchend', function(e) {
-      touchendX = e.changedTouches[0].screenX;
-      touchendY = e.changedTouches[0].screenY;
-      handleGesture();
-    }, { passive: true });
-
-    function handleGesture() {
-      const deltaX = touchendX - touchstartX;
-      const deltaY = touchendY - touchstartY;
-
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-        if (deltaX < 0) {
-          changeMonth(1);
-        } else {
-          changeMonth(-1);
-        }
-      }
-    }
-  }
-
   function initApp() {
     today = new Date();
-
     const savedYear = sessionStorage.getItem('currentYear');
     const savedMonth = sessionStorage.getItem('currentMonth');
-
     if (savedYear !== null && savedMonth !== null) {
       currentDate = new Date(parseInt(savedYear, 10), parseInt(savedMonth, 10), 1);
     } else {
       currentDate = new Date();
-      sessionStorage.setItem('currentYear', currentDate.getFullYear());
-      sessionStorage.setItem('currentMonth', currentDate.getMonth());
     }
-
     const savedTeam = localStorage.getItem('savedMyTeam');
-    if (savedTeam !== null) {
-      document.getElementById('myTeam').value = savedTeam;
-    }
+    if (savedTeam !== null) document.getElementById('myTeam').value = savedTeam;
 
     renderCalendar();
-    initSwipeEvents();
   }
 
   document.addEventListener('DOMContentLoaded', initApp);
-
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then((reg) => console.log('Service Worker 등록 성공:', reg.scope))
-        .catch((err) => console.error('Service Worker 등록 실패:', err));
-    });
-  }
 </script>
 
 </body>
