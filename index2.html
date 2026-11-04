@@ -89,7 +89,7 @@
       background: #6c757d;
       color: white;
       border: none;
-      padding: 5px 10px;
+      padding: 5px 9px;
       border-radius: 6px;
       font-size: 0.8rem;
       cursor: pointer;
@@ -553,6 +553,7 @@
       </select>
     </div>
     <div class="memo-tools">
+      <button class="btn-tool" onclick="exportMemos()">💾 메모 백업</button>
       <button class="btn-tool" onclick="document.getElementById('importFileInput').click()">📂 메모 불러오기</button>
       <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importMemos(event)">
     </div>
@@ -992,7 +993,7 @@
     document.getElementById('detailModal').style.display = 'flex';
   }
 
-  /* ===== 자동 백업 (JSON 파일 다운로드) ===== */
+  /* ===== 수동 백업 (필요할 때만 내보내기) ===== */
   function exportMemos() {
     const memos = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -1002,7 +1003,10 @@
       }
     }
     
-    if (Object.keys(memos).length === 0) return;
+    if (Object.keys(memos).length === 0) {
+      alert('백업할 메모가 없습니다.');
+      return;
+    }
 
     const blob = new Blob([JSON.stringify(memos, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1038,7 +1042,7 @@
     reader.readAsText(file);
   }
 
-  /* ===== 메모 저장 (저장 + 자동 백업) ===== */
+  /* ===== 메모 저장 (단일 내장 공간에 덮어쓰기 저장, 파일 다운로드 X) ===== */
   function saveCurrentMemo() {
     if (!activeModalDateStr) return;
     const memoText = document.getElementById('modalMemoInput').value.trim();
@@ -1050,7 +1054,6 @@
     }
     
     renderCalendar();
-    exportMemos(); // 메모 저장과 동시에 JSON 파일 백업 생성
     closeModal('detailModal');
   }
 
