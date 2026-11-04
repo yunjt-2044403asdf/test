@@ -68,7 +68,9 @@
       margin-bottom: 12px;
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
     .config-group {
@@ -76,6 +78,27 @@
       align-items: center;
       gap: 6px;
       font-size: 0.85rem;
+    }
+
+    .memo-tools {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-tool {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    .btn-tool:hover {
+      background: #5a6268;
     }
 
     select {
@@ -509,6 +532,7 @@
       .shift-tag { font-size: 0.58rem; padding: 0 2px; margin-top: 1px; height: 13px; }
       .big-shift-container { font-size: 0.95rem; margin-top: 2px; }
       .cell-memo-badge { font-size: 0.52rem; padding: 0 2px; }
+      .btn-tool { font-size: 0.75rem; padding: 4px 7px; }
     }
   </style>
 </head>
@@ -527,6 +551,10 @@
         <option value="3">3조</option>
         <option value="4">4조</option>
       </select>
+    </div>
+    <div class="memo-tools">
+      <button class="btn-tool" onclick="document.getElementById('importFileInput').click()">📂 메모 불러오기</button>
+      <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importMemos(event)">
     </div>
   </div>
 
@@ -964,6 +992,53 @@
     document.getElementById('detailModal').style.display = 'flex';
   }
 
+  /* ===== 자동 백업 (JSON 파일 다운로드) ===== */
+  function exportMemos() {
+    const memos = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('memo_')) {
+        memos[key] = localStorage.getItem(key);
+      }
+    }
+    
+    if (Object.keys(memos).length === 0) return;
+
+    const blob = new Blob([JSON.stringify(memos, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `shift_calendar_memos_${formatDate(new Date())}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /* ===== 불러오기 (JSON 파일 복원) ===== */
+  function importMemos(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const memos = JSON.parse(e.target.result);
+        let count = 0;
+        Object.keys(memos).forEach(key => {
+          if (key.startsWith('memo_')) {
+            localStorage.setItem(key, memos[key]);
+            count++;
+          }
+        });
+        alert(`${count}개의 메모를 성공적으로 불러왔습니다.`);
+        renderCalendar();
+      } catch (err) {
+        alert('올바른 백업 파일(JSON)이 아닙니다.');
+      }
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  /* ===== 메모 저장 (저장 + 자동 백업) ===== */
   function saveCurrentMemo() {
     if (!activeModalDateStr) return;
     const memoText = document.getElementById('modalMemoInput').value.trim();
@@ -975,15 +1050,19 @@
     }
     
     renderCalendar();
+    exportMemos(); // 메모 저장과 동시에 JSON 파일 백업 생성
     closeModal('detailModal');
   }
 
   function deleteCurrentMemo() {
     if (!activeModalDateStr) return;
-    localStorage.removeItem('memo_' + activeModalDateStr);
-    document.getElementById('modalMemoInput').value = '';
-    renderCalendar();
-    closeModal('detailModal');
+    
+    if (confirm("정말 이 메모를 삭제하시겠습니까?")) {
+      localStorage.removeItem('memo_' + activeModalDateStr);
+      document.getElementById('modalMemoInput').value = '';
+      renderCalendar();
+      closeModal('detailModal');
+    }
   }
 
   /* ===== 월 선택 전용 팝업 관련 함수 ===== */
